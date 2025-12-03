@@ -184,10 +184,24 @@ export default function Chat() {
         formattedMessage.content,
       );
 
-      if (selectedContact && formattedMessage.senderId === selectedContact._id) {
-        console.log("[Chat] Message is for selected contact, adding to messages");
-        setMessages((prev) => [...prev, formattedMessage]);
-        playNotificationSound();
+      // Add message if it's between current user and selected contact
+      if (selectedContact) {
+        const isFromSelectedContact = formattedMessage.senderId === selectedContact._id;
+        const isFromCurrentUser = formattedMessage.senderId === user._id;
+        const isToSelectedContact = formattedMessage.receiverId === selectedContact._id;
+        const isToCurrentUser = formattedMessage.receiverId === user._id;
+
+        // Check if message is part of current conversation
+        if (
+          (isFromSelectedContact && isToCurrentUser) ||
+          (isFromCurrentUser && isToSelectedContact)
+        ) {
+          console.log("[Chat] Message is for selected contact, adding to messages");
+          setMessages((prev) => [...prev, formattedMessage]);
+          if (!isFromCurrentUser) {
+            playNotificationSound();
+          }
+        }
       } else if (!selectedContact) {
         console.log("[Chat] No contact selected, showing toast");
         setUnreadCounts((prev) => ({
