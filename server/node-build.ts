@@ -29,7 +29,7 @@ async function startServer() {
       socket.on("join-chat", (data: { chatId: string; userId: string }) => {
         socket.join(data.chatId);
         console.log(
-          `[Socket.IO] User ${data.userId} joined chat ${data.chatId}`,
+          `[Socket.IO] User ${data.userId} joined chat ${data.chatId}. Rooms: ${socket.rooms}`,
         );
         socket.broadcast.to(data.chatId).emit("user-joined", {
           userId: data.userId,
@@ -39,7 +39,7 @@ async function startServer() {
 
       socket.on(
         "send-message",
-        (data: {
+        async (data: {
           messageId: string;
           sender: string;
           senderName: string;
@@ -48,12 +48,15 @@ async function startServer() {
           timestamp: string;
         }) => {
           console.log(
-            `[Socket.IO] Message from ${data.sender} in ${data.chatId}`,
+            `[Socket.IO] Message from ${data.sender} in ${data.chatId}: "${data.content}"`,
           );
+
           const messageToEmit = {
             ...data,
-            chatId: data.chatId, // Ensure chatId is included
+            chatId: data.chatId,
           };
+
+          console.log(`[Socket.IO] Broadcasting to room ${data.chatId}`);
           io.to(data.chatId).emit("new-message", messageToEmit);
         },
       );
