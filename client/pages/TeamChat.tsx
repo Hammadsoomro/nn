@@ -324,8 +324,11 @@ export default function Chat() {
     // Create consistent room ID (same as in handleSelectContact)
     const roomId = [user._id, selectedContact._id].sort().join("_");
 
+    // Generate unique message ID (timestamp + random suffix to avoid collisions)
+    const messageId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     const messageData = {
-      messageId: Date.now().toString(),
+      messageId,
       sender: user._id,
       senderName: user.name,
       recipient: selectedContact._id,
@@ -341,7 +344,7 @@ export default function Chat() {
     setMessages((prev) => [
       ...prev,
       {
-        id: messageData.messageId,
+        id: messageId,
         senderId: user._id,
         receiverId: selectedContact._id,
         content: messageInput,
@@ -500,13 +503,13 @@ export default function Chat() {
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.senderId === user?.id
+                    className={`flex ${message.senderId === user?._id
                         ? "justify-end"
                         : "justify-start"
                       }`}
                   >
                     <div
-                      className={`max-w-xs px-4 py-2 rounded-lg ${message.senderId === user?.id
+                      className={`max-w-xs px-4 py-2 rounded-lg ${message.senderId === user?._id
                           ? "bg-blue-600 text-white rounded-br-none"
                           : "bg-gray-200 text-gray-900 rounded-bl-none"
                         }`}
