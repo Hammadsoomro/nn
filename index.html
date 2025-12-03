@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskFlow - Team Management Platform</title>
+    <meta
+      name="description"
+      content="Enterprise-grade team collaboration and task management platform with real-time updates and advanced features."
+    />
+    <meta name="theme-color" content="#7c3aed" />
+
+    <script>
+      // Initialize theme from localStorage
+      (function () {
+        const theme = localStorage.getItem("theme") || "light";
+        const html = document.documentElement;
+        if (theme === "dark") {
+          html.classList.add("dark");
+        } else {
+          html.classList.remove("dark");
+        }
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script type="module" src="/client/App.tsx"></script>
+  </body>
+</html>
