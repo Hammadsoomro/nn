@@ -257,7 +257,7 @@ export default function Chat() {
     if (socket) {
       socket.emit("join-chat", {
         chatId: contact._id,
-        userId: user?.id,
+        userId: user?._id,
       });
     }
   };
@@ -268,7 +268,7 @@ export default function Chat() {
 
     const messageData = {
       messageId: Date.now().toString(),
-      sender: user.id,
+      sender: user._id,
       senderName: user.name,
       chatId: selectedContact._id,
       content: messageInput.trim(),
@@ -283,7 +283,7 @@ export default function Chat() {
       ...prev,
       {
         id: messageData.messageId,
-        senderId: user.id,
+        senderId: user._id,
         receiverId: selectedContact._id,
         content: messageInput,
         timestamp: new Date(),
