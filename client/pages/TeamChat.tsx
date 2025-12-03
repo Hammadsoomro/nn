@@ -203,8 +203,17 @@ export default function Chat() {
           (isFromSelectedContact) ||
           (isFromCurrentUser)
         ) {
-          console.log("[Chat] Message is for selected contact, adding to messages");
-          setMessages((prev) => [...prev, displayMessage]);
+          console.log("[Chat] Message is for selected contact, checking for duplicates");
+          // Check if message already exists (prevent duplicates)
+          setMessages((prev) => {
+            const isDuplicate = prev.some((msg) => msg.id === displayMessage.id);
+            if (isDuplicate) {
+              console.log("[Chat] Message already exists, skipping");
+              return prev;
+            }
+            console.log("[Chat] Adding new message");
+            return [...prev, displayMessage];
+          });
           if (!isFromCurrentUser) {
             playNotificationSound();
           }
