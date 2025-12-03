@@ -298,6 +298,7 @@ export default function Chat() {
       messageId: Date.now().toString(),
       sender: user._id,
       senderName: user.name,
+      recipient: selectedContact._id,
       chatId: selectedContact._id,
       content: messageInput.trim(),
       timestamp: new Date().toISOString(),
