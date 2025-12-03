@@ -164,6 +164,7 @@ export default function Chat() {
     if (!socket || !user) return;
 
     socket.on("new-message", (message: any) => {
+      console.log("[Socket] Received message:", message);
       const formattedMessage: ChatMessage = {
         id: message.messageId || message._id || Date.now().toString(),
         senderId: message.sender || message.senderId,
@@ -173,6 +174,10 @@ export default function Chat() {
         senderName: message.senderName,
       };
 
+      console.log("[Chat] Formatted message:", formattedMessage);
+      console.log("[Chat] Selected contact:", selectedContact);
+      console.log("[Chat] User ID:", user?._id);
+
       // Show desktop notification regardless of focused tab
       showDesktopNotification(
         formattedMessage.senderName || "Team Member",
@@ -180,9 +185,11 @@ export default function Chat() {
       );
 
       if (selectedContact && formattedMessage.senderId === selectedContact._id) {
+        console.log("[Chat] Message is for selected contact, adding to messages");
         setMessages((prev) => [...prev, formattedMessage]);
         playNotificationSound();
       } else if (!selectedContact) {
+        console.log("[Chat] No contact selected, showing toast");
         setUnreadCounts((prev) => ({
           ...prev,
           [formattedMessage.senderId]: (prev[formattedMessage.senderId] || 0) + 1,
