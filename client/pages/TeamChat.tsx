@@ -162,20 +162,29 @@ export default function Chat() {
   useEffect(() => {
     if (!socket || !user) return;
 
-    socket.on("new_message", (message: ChatMessage) => {
+    socket.on("new-message", (message: any) => {
+      const formattedMessage: ChatMessage = {
+        id: message.messageId || message._id || Date.now().toString(),
+        senderId: message.sender || message.senderId,
+        receiverId: message.receiverId || message.recipient,
+        content: message.content,
+        timestamp: new Date(message.timestamp),
+        senderName: message.senderName,
+      };
+
       // Show desktop notification regardless of focused tab
       showDesktopNotification(
-        message.senderName || "Team Member",
-        message.content,
+        formattedMessage.senderName || "Team Member",
+        formattedMessage.content,
       );
 
-      if (selectedContact && message.senderId === selectedContact._id) {
-        setMessages((prev) => [...prev, message]);
+      if (selectedContact && formattedMessage.senderId === selectedContact._id) {
+        setMessages((prev) => [...prev, formattedMessage]);
         playNotificationSound();
-      } else {
+      } else if (!selectedContact) {
         setUnreadCounts((prev) => ({
           ...prev,
-          [message.senderId]: (prev[message.senderId] || 0) + 1,
+          [formattedMessage.senderId]: (prev[formattedMessage.senderId] || 0) + 1,
         }));
         playNotificationSound();
         toast.custom(
@@ -186,10 +195,10 @@ export default function Chat() {
               </div>
               <div className="flex-1">
                 <p className="font-semibold">
-                  {message.senderName || "New Message"}
+                  {formattedMessage.senderName || "New Message"}
                 </p>
                 <p className="text-sm text-blue-100 truncate">
-                  {message.content}
+                  {formattedMessage.content}
                 </p>
               </div>
               <button
@@ -208,14 +217,8 @@ export default function Chat() {
       }
     });
 
-    socket.on("group_message", (message: ChatMessage) => {
-      setMessages((prev) => [...prev, message]);
-      playNotificationSound();
-    });
-
     return () => {
-      socket.off("new_message");
-      socket.off("group_message");
+      socket.off("new-message");
     };
   }, [socket, user, selectedContact]);
 
@@ -248,22 +251,37 @@ export default function Chat() {
       ...prev,
       [contact._id]: 0,
     }));
+
+    // Join the chat room for real-time updates
+    if (socket) {
+      socket.emit("join-chat", {
+        chatId: contact._id,
+        userId: user?.id,
+      });
+    }
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || !socket || !selectedContact || !user) return;
 
-    socket.emit("send_message", {
-      senderId: user.id,
-      receiverId: selectedContact._id,
+    const messageData = {
+      messageId: Date.now().toString(),
+      sender: user.id,
+      senderName: user.name,
+      chatId: selectedContact._id,
       content: messageInput.trim(),
-    });
+      timestamp: new Date().toISOString(),
+    };
 
+    // Emit to socket for real-time delivery
+    socket.emit("send-message", messageData);
+
+    // Add message to local state
     setMessages((prev) => [
       ...prev,
       {
-        id: Date.now().toString(),
+        id: messageData.messageId,
         senderId: user.id,
         receiverId: selectedContact._id,
         content: messageInput,
