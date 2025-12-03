@@ -166,38 +166,45 @@ export default function Chat() {
     socket.on("new-message", (message: any) => {
       console.log("[Socket] Received message:", message);
       const formattedMessage: ChatMessage = {
+        _id: message.messageId || message._id || Date.now().toString(),
+        sender: message.sender || message.senderId,
+        content: message.content,
+        createdAt: message.timestamp || new Date().toISOString(),
+        senderName: message.senderName,
+      };
+
+      // Create a compatible message for local display
+      const displayMessage = {
         id: message.messageId || message._id || Date.now().toString(),
         senderId: message.sender || message.senderId,
         receiverId: message.receiverId || message.recipient,
         content: message.content,
-        timestamp: new Date(message.timestamp),
+        timestamp: new Date(message.timestamp || new Date()),
         senderName: message.senderName,
       };
 
-      console.log("[Chat] Formatted message:", formattedMessage);
+      console.log("[Chat] Display message:", displayMessage);
       console.log("[Chat] Selected contact:", selectedContact);
       console.log("[Chat] User ID:", user?._id);
 
       // Show desktop notification regardless of focused tab
       showDesktopNotification(
-        formattedMessage.senderName || "Team Member",
-        formattedMessage.content,
+        displayMessage.senderName || "Team Member",
+        displayMessage.content,
       );
 
       // Add message if it's between current user and selected contact
       if (selectedContact) {
-        const isFromSelectedContact = formattedMessage.senderId === selectedContact._id;
-        const isFromCurrentUser = formattedMessage.senderId === user._id;
-        const isToSelectedContact = formattedMessage.receiverId === selectedContact._id;
-        const isToCurrentUser = formattedMessage.receiverId === user._id;
+        const isFromSelectedContact = displayMessage.senderId === selectedContact._id;
+        const isFromCurrentUser = displayMessage.senderId === user._id;
 
-        // Check if message is part of current conversation
+        // For direct messaging, if message is in our chat, add it
         if (
-          (isFromSelectedContact && isToCurrentUser) ||
-          (isFromCurrentUser && isToSelectedContact)
+          (isFromSelectedContact) ||
+          (isFromCurrentUser)
         ) {
           console.log("[Chat] Message is for selected contact, adding to messages");
-          setMessages((prev) => [...prev, formattedMessage]);
+          setMessages((prev) => [...prev, displayMessage]);
           if (!isFromCurrentUser) {
             playNotificationSound();
           }
@@ -206,7 +213,7 @@ export default function Chat() {
         console.log("[Chat] No contact selected, showing toast");
         setUnreadCounts((prev) => ({
           ...prev,
-          [formattedMessage.senderId]: (prev[formattedMessage.senderId] || 0) + 1,
+          [displayMessage.senderId]: (prev[displayMessage.senderId] || 0) + 1,
         }));
         playNotificationSound();
         toast.custom(
@@ -217,10 +224,10 @@ export default function Chat() {
               </div>
               <div className="flex-1">
                 <p className="font-semibold">
-                  {formattedMessage.senderName || "New Message"}
+                  {displayMessage.senderName || "New Message"}
                 </p>
                 <p className="text-sm text-blue-100 truncate">
-                  {formattedMessage.content}
+                  {displayMessage.content}
                 </p>
               </div>
               <button
