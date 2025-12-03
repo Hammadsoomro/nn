@@ -139,12 +139,14 @@ export default function Chat() {
     const loadContacts = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("/api/team/info", {
+        const response = await fetch("/api/members", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
-          setContacts(data.contacts || []);
+          setContacts(data);
+        } else {
+          toast.error("Failed to load contacts");
         }
       } catch (error) {
         console.error("Failed to load contacts:", error);
