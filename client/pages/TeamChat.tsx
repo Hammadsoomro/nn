@@ -273,9 +273,8 @@ export default function Chat() {
     oscillator.stop(audioContext.currentTime + 0.1);
   };
 
-  const handleSelectContact = (contact: Contact) => {
+  const handleSelectContact = async (contact: Contact) => {
     setSelectedContact(contact);
-    setMessages([]);
     setUnreadCounts((prev) => ({
       ...prev,
       [contact._id]: 0,
@@ -289,6 +288,32 @@ export default function Chat() {
         chatId: roomId,
         userId: user._id,
       });
+    }
+
+    // Load messages from database
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `/api/chat/messages?recipient=${contact._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (response.ok) {
+        const messages = await response.json();
+        setMessages(
+          messages.map((msg: any) => ({
+            id: msg._id,
+            senderId: msg.sender,
+            receiverId: msg.recipient,
+            content: msg.content,
+            timestamp: new Date(msg.createdAt),
+            senderName: msg.senderName,
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Failed to load messages:", error);
     }
   };
 
