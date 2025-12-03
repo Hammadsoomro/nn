@@ -32,8 +32,9 @@ const App = () => (
       <Sonner />
       <ThemeProvider>
         <AuthProvider>
-          <ChatProvider>
-            <ErrorBoundary>
+          <SocketProvider>
+            <ChatProvider>
+              <ErrorBoundary>
               <BrowserRouter>
               <Routes>
                 {/* Public Routes */}
@@ -114,8 +115,9 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </BrowserRouter>
-            </ErrorBoundary>
-          </ChatProvider>
+              </ErrorBoundary>
+            </ChatProvider>
+          </SocketProvider>
         </AuthProvider>
       </ThemeProvider>
     </TooltipProvider>
