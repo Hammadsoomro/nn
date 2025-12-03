@@ -281,11 +281,13 @@ export default function Chat() {
       [contact._id]: 0,
     }));
 
-    // Join the chat room for real-time updates
-    if (socket) {
+    // Create a consistent room ID for both users (smaller ID first)
+    if (socket && user?._id) {
+      const roomId = [user._id, contact._id].sort().join("_");
+      console.log(`[Chat] Joining room: ${roomId}`);
       socket.emit("join-chat", {
-        chatId: contact._id,
-        userId: user?._id,
+        chatId: roomId,
+        userId: user._id,
       });
     }
   };
@@ -294,12 +296,15 @@ export default function Chat() {
     e.preventDefault();
     if (!messageInput.trim() || !socket || !selectedContact || !user) return;
 
+    // Create consistent room ID (same as in handleSelectContact)
+    const roomId = [user._id, selectedContact._id].sort().join("_");
+
     const messageData = {
       messageId: Date.now().toString(),
       sender: user._id,
       senderName: user.name,
       recipient: selectedContact._id,
-      chatId: selectedContact._id,
+      chatId: roomId,
       content: messageInput.trim(),
       timestamp: new Date().toISOString(),
     };
