@@ -48,22 +48,26 @@ async function startServer() {
           content: string;
           timestamp: string;
         }) => {
-          console.log(
-            `[Socket.IO] Message from ${data.sender} to ${data.recipient || data.chatId}: "${data.content}"`,
-          );
+          try {
+            console.log(
+              `[Socket.IO] Message from ${data.sender} to ${data.recipient || data.chatId}: "${data.content}"`,
+            );
 
-          const messageToEmit = {
-            messageId: data.messageId,
-            sender: data.sender,
-            senderName: data.senderName,
-            recipient: data.recipient || data.chatId,
-            chatId: data.chatId,
-            content: data.content,
-            timestamp: data.timestamp,
-          };
+            const messageToEmit = {
+              messageId: data.messageId,
+              sender: data.sender,
+              senderName: data.senderName,
+              recipient: data.recipient || data.chatId,
+              chatId: data.chatId,
+              content: data.content,
+              timestamp: data.timestamp,
+            };
 
-          console.log(`[Socket.IO] Broadcasting to room ${data.chatId}:`, messageToEmit);
-          io.to(data.chatId).emit("new-message", messageToEmit);
+            console.log(`[Socket.IO] Broadcasting to room ${data.chatId}:`, messageToEmit);
+            io.to(data.chatId).emit("new-message", messageToEmit);
+          } catch (error) {
+            console.error("[Socket.IO] Error handling send-message:", error);
+          }
         },
       );
 
