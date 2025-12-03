@@ -295,7 +295,8 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <Layout>
+      <div className="flex h-screen bg-gray-100">
       <aside
         className={`${sidebarOpen ? "w-80" : "w-20"
           } bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shadow-lg`}
@@ -504,5 +505,6 @@ export default function Chat() {
         )}
       </main>
     </div>
+    </Layout>
   );
 }
