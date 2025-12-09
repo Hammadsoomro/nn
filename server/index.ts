@@ -135,6 +135,10 @@ export async function createServer() {
   app.get("/api/claim/numbers", getClaimedNumbers);
   app.post("/api/claim/release", releaseClaimedNumbers);
 
+  // Announcements routes (protected)
+  app.post("/api/announcements/send", authMiddleware, sendAnnouncement);
+  app.get("/api/announcements", authMiddleware, getAnnouncements);
+
   // Global error handler
   app.use((err: any, _req: any, res: any, _next: any) => {
     console.error("[Server] Unhandled error:", err);
