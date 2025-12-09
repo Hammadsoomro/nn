@@ -430,14 +430,6 @@ export default function NumbersSorter() {
                       )}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-border/50">
-                    <span className="text-sm text-muted-foreground">
-                      Queued List Lines:
-                    </span>
-                    <span className="font-semibold text-foreground text-lg text-primary">
-                      {queuedCount}
-                    </span>
-                  </div>
                 </div>
               </CardContent>
             </Card>
