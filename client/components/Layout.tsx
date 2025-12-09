@@ -86,6 +86,14 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <>
+      {/* Announcement Slider */}
+      {currentAnnouncement && (
+        <AnnouncementSlider
+          announcement={currentAnnouncement}
+          onDismiss={() => setCurrentAnnouncement(null)}
+        />
+      )}
+
       <div className="flex h-screen bg-transparent">
         {/* Modern Sidebar */}
         <ModernSidebar
