@@ -906,7 +906,9 @@ export default function SettingsPage() {
 
           {/* Tabs */}
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className={`grid w-full ${isAdmin ? "grid-cols-4" : "grid-cols-1"}`}>
+            <TabsList
+              className={`grid w-full ${isAdmin ? "grid-cols-4" : "grid-cols-1"}`}
+            >
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">Profile</span>
@@ -927,7 +929,10 @@ export default function SettingsPage() {
               )}
 
               {isAdmin && (
-                <TabsTrigger value="announcements" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="announcements"
+                  className="flex items-center gap-2"
+                >
                   <Megaphone className="h-4 w-4" />
                   <span className="hidden sm:inline">Announcements</span>
                 </TabsTrigger>

@@ -47,7 +47,8 @@ export const Layout = ({ children }: LayoutProps) => {
     }
     return false;
   });
-  const [currentAnnouncement, setCurrentAnnouncement] = useState<Announcement | null>(null);
+  const [currentAnnouncement, setCurrentAnnouncement] =
+    useState<Announcement | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   const toggleCollapse = () => {
@@ -94,7 +95,9 @@ export const Layout = ({ children }: LayoutProps) => {
         />
       )}
 
-      <div className={`flex h-screen bg-transparent transition-all duration-300 ${currentAnnouncement ? "pt-20" : ""}`}>
+      <div
+        className={`flex h-screen bg-transparent transition-all duration-300 ${currentAnnouncement ? "pt-20" : ""}`}
+      >
         {/* Modern Sidebar */}
         <ModernSidebar
           isOpen={sidebarOpen}

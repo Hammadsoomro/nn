@@ -12,7 +12,9 @@ export async function sendAnnouncement(req: Request, res: Response) {
 
     // Check if user is admin
     if (role !== "admin") {
-      return res.status(403).json({ error: "Only admins can send announcements" });
+      return res
+        .status(403)
+        .json({ error: "Only admins can send announcements" });
     }
 
     // Validate input
@@ -25,7 +27,9 @@ export async function sendAnnouncement(req: Request, res: Response) {
     }
 
     if (text.length > 500) {
-      return res.status(400).json({ error: "Announcement must be 500 characters or less" });
+      return res
+        .status(400)
+        .json({ error: "Announcement must be 500 characters or less" });
     }
 
     const collections = getCollections();

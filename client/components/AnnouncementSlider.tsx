@@ -25,7 +25,8 @@ export function AnnouncementSlider({
     const playNotificationSound = () => {
       // Create a simple notification sound using Web Audio API
       try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = new (window.AudioContext ||
+          (window as any).webkitAudioContext)();
 
         // Create oscillators for a pleasant notification sound
         const now = audioContext.currentTime;
@@ -51,7 +52,10 @@ export function AnnouncementSlider({
           osc2.frequency.value = 1000;
           osc2.type = "sine";
           gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
-          gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+          gain2.gain.exponentialRampToValueAtTime(
+            0.01,
+            audioContext.currentTime + 0.3,
+          );
           osc2.start(audioContext.currentTime);
           osc2.stop(audioContext.currentTime + 0.3);
         }, 150);
