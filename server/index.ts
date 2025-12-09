@@ -30,6 +30,7 @@ import {
   getClaimedNumbers,
   releaseClaimedNumbers,
 } from "./routes/claim";
+import { sendAnnouncement, getAnnouncements } from "./routes/announcements";
 import { connectDB } from "./db";
 import { authMiddleware } from "./middleware/auth";
 import { getCollections } from "./db";
