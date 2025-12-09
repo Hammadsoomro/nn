@@ -94,7 +94,7 @@ export const Layout = ({ children }: LayoutProps) => {
         />
       )}
 
-      <div className="flex h-screen bg-transparent">
+      <div className={`flex h-screen bg-transparent transition-all duration-300 ${currentAnnouncement ? "pt-20" : ""}`}>
         {/* Modern Sidebar */}
         <ModernSidebar
           isOpen={sidebarOpen}
