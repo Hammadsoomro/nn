@@ -23,8 +23,10 @@ import {
   Settings as SettingsIcon,
   Eye,
   EyeOff,
+  Megaphone,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AnnouncementPanel } from "@/components/AnnouncementPanel";
 
 interface ClaimSettings {
   lineCount: number;
