@@ -7,7 +7,13 @@ export async function sendAnnouncement(req: Request, res: Response) {
   try {
     const userId = (req as any).userId;
     const teamId = (req as any).teamId;
+    const role = (req as any).role;
     const { text } = req.body;
+
+    // Check if user is admin
+    if (role !== "admin") {
+      return res.status(403).json({ error: "Only admins can send announcements" });
+    }
 
     // Validate input
     if (!text || typeof text !== "string") {
