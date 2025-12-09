@@ -291,9 +291,19 @@ export default function NumbersSorter() {
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}
           <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              Numbers Sorter 🔢
-            </h1>
+            <div className="flex items-center justify-between gap-4">
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                Numbers Sorter 🔢
+              </h1>
+              <div className="flex items-center gap-3 bg-primary/10 px-4 py-2 rounded-lg border border-primary/20">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Queued:
+                </span>
+                <span className="text-2xl font-bold text-primary">
+                  {queuedCount}
+                </span>
+              </div>
+            </div>
             <p className="text-muted-foreground">
               Input numbers, deduplicate them, and add to queue
             </p>
