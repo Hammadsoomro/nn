@@ -21,6 +21,47 @@ export function AnnouncementSlider({
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    // Play notification sound
+    const playNotificationSound = () => {
+      // Create a simple notification sound using Web Audio API
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+        // Create oscillators for a pleasant notification sound
+        const now = audioContext.currentTime;
+
+        // First note - higher pitch
+        const osc1 = audioContext.createOscillator();
+        const gain1 = audioContext.createGain();
+        osc1.connect(gain1);
+        gain1.connect(audioContext.destination);
+        osc1.frequency.value = 800;
+        osc1.type = "sine";
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc1.start(now);
+        osc1.stop(now + 0.3);
+
+        // Second note - slightly lower pitch
+        setTimeout(() => {
+          const osc2 = audioContext.createOscillator();
+          const gain2 = audioContext.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioContext.destination);
+          osc2.frequency.value = 1000;
+          osc2.type = "sine";
+          gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+          osc2.start(audioContext.currentTime);
+          osc2.stop(audioContext.currentTime + 0.3);
+        }, 150);
+      } catch (error) {
+        console.log("Audio notification not available");
+      }
+    };
+
+    playNotificationSound();
+
     // Auto-dismiss after 8 seconds
     const timer = setTimeout(() => {
       setIsVisible(false);
