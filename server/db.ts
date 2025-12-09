@@ -11,6 +11,7 @@ export interface DbCollections {
   chatGroups: Collection;
   claimSettings: Collection;
   claimedNumbers: Collection;
+  announcements: Collection;
 }
 
 let collections: DbCollections | null = null;
