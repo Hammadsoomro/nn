@@ -1045,6 +1045,13 @@ export default function SettingsPage() {
                 <SorterSettingsPanel />
               </TabsContent>
             )}
+
+            {/* Announcements Tab (Admin Only) */}
+            {isAdmin && (
+              <TabsContent value="announcements" className="space-y-6">
+                <AnnouncementPanel />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
