@@ -76,7 +76,23 @@ export default function NumbersSorter() {
       }
     };
 
+    const loadQueuedCount = async () => {
+      try {
+        const response = await fetch("/api/queued", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setQueuedCount(data.lines?.length || 0);
+        }
+      } catch (error) {
+        console.error("[NumbersSorter] Error loading queued count:", error);
+      }
+    };
+
     loadSettings();
+    loadQueuedCount();
 
     // Listen for real-time claim settings updates
     const handleClaimSettingsUpdated = () => {
@@ -84,10 +100,17 @@ export default function NumbersSorter() {
       loadSettings();
     };
 
+    const handleLinesQueuedUpdated = () => {
+      console.log("[NumbersSorter] Queued list updated, reloading");
+      loadQueuedCount();
+    };
+
     socket.on("claim-settings-updated", handleClaimSettingsUpdated);
+    socket.on("lines-queued-updated", handleLinesQueuedUpdated);
 
     return () => {
       socket.off("claim-settings-updated", handleClaimSettingsUpdated);
+      socket.off("lines-queued-updated", handleLinesQueuedUpdated);
       socket.disconnect();
     };
   }, [token]);
