@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useChat } from "@/context/ChatContext";
@@ -22,6 +22,16 @@ import {
 } from "lucide-react";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { ModernSidebar } from "@/components/ModernSidebar";
+import { AnnouncementSlider } from "@/components/AnnouncementSlider";
+import { io, Socket } from "socket.io-client";
+
+interface Announcement {
+  _id: string;
+  text: string;
+  sentBy: string;
+  teamId: string;
+  createdAt: string;
+}
 
 interface LayoutProps {
   children: React.ReactNode;
