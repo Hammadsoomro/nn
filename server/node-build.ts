@@ -6,6 +6,7 @@ import * as express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import { setIO } from "./websocket-io";
+import { handleSocketAuth } from "./middleware/auth";
 
 async function startServer() {
   try {
