@@ -175,7 +175,7 @@ export const verifyToken = (
     if (payload.exp < Date.now()) return null;
 
     // Verify signature
-    const jwtSecret = process.env.JWT_SECRET || "demo-secret";
+    const jwtSecret = getJwtSecret();
     const expectedSignature = crypto
       .createHash("sha256")
       .update(JSON.stringify(payload) + jwtSecret)
