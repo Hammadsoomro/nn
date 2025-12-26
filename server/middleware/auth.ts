@@ -2,12 +2,22 @@ import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../routes/auth";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
+import { Socket } from "socket.io";
 
 export interface AuthRequest extends Request {
   userId: string;
   email: string;
   role: string;
   teamId?: string;
+}
+
+export interface AuthenticatedSocket extends Socket {
+  data: {
+    userId?: string;
+    email?: string;
+    role?: string;
+    teamId?: string;
+  };
 }
 
 export const authMiddleware = async (
