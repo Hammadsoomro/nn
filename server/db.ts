@@ -23,10 +23,9 @@ export async function connectDB(): Promise<Db> {
 
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
-    console.warn(
-      "MONGODB_URI environment variable is not set. Database features will not work.",
+    throw new Error(
+      "MONGODB_URI environment variable is not set. Cannot start the application without a database connection.",
     );
-    return {} as Db;
   }
 
   try {
