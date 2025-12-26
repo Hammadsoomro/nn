@@ -120,7 +120,8 @@ async function startServer() {
     });
 
     // In production, serve the built SPA files
-    const __dirname = import.meta.dirname;
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
     const distPath = path.join(__dirname, "../spa");
 
     // Serve static files (but not index.html for API routes)
