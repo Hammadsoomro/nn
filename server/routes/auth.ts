@@ -10,6 +10,17 @@ import crypto from "crypto";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
 
+// Helper: Get JWT secret from environment
+const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      "JWT_SECRET environment variable is not set. Cannot create or verify authentication tokens.",
+    );
+  }
+  return secret;
+};
+
 // Helper: Hash password (demo - use bcrypt in production)
 const hashPassword = (password: string): string => {
   return crypto.createHash("sha256").update(password).digest("hex");
@@ -24,7 +35,7 @@ const createToken = (user: User): string => {
     iat: Date.now(),
     exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
   };
-  const jwtSecret = process.env.JWT_SECRET || "demo-secret";
+  const jwtSecret = getJwtSecret();
   const signature = crypto
     .createHash("sha256")
     .update(JSON.stringify(payload) + jwtSecret)
