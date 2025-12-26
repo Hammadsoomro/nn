@@ -50,8 +50,14 @@ function expressPlugin(): Plugin {
 
         setIO(io);
 
-        // Socket.io connection handling
-        io.on("connection", (socket) => {
+        // Socket.io connection handling with authentication
+        io.on("connection", async (socket) => {
+          // Authenticate socket connection
+          await handleSocketAuth(socket as any);
+
+          // If socket was disconnected during auth, exit early
+          if (!socket.connected) return;
+
           console.log(`[Socket.IO] User connected: ${socket.id}`);
 
           // User joins a chat room
