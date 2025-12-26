@@ -24,7 +24,6 @@ import {
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { ModernSidebar } from "@/components/ModernSidebar";
 import { AnnouncementSlider } from "@/components/AnnouncementSlider";
-import { io, Socket } from "socket.io-client";
 
 interface Announcement {
   _id: string;
