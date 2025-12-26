@@ -24,8 +24,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Create socket connection without auth header (socket.io uses its own auth mechanism)
+    // Create socket connection with authentication
     const newSocket = io(window.location.origin, {
+      auth: { token },
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 1000,
