@@ -57,16 +57,17 @@ export function ChatViewFixed({ contact, token, socket }: ChatViewProps) {
       setLoading(true);
 
       try {
+        const queryParam = contact.type === "group" ? "groupId" : "recipient";
         const response = await fetch(
-          `/api/chat/messages?chatId=${contact.id}`,
+          `/api/chat/messages?${queryParam}=${contact.id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
 
         if (response.ok) {
-          const data = await response.json();
-          setMessages(data.messages || []);
+          const messagesArray = await response.json();
+          setMessages(Array.isArray(messagesArray) ? messagesArray : []);
         } else {
           console.error(
             "[ChatView] Failed to fetch messages:",
