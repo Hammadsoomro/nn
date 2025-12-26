@@ -50,7 +50,7 @@ export const Layout = ({ children }: LayoutProps) => {
   });
   const [currentAnnouncement, setCurrentAnnouncement] =
     useState<Announcement | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const { socket } = useSocket();
 
   const toggleCollapse = () => {
     const newValue = !isCollapsed;
@@ -58,21 +58,10 @@ export const Layout = ({ children }: LayoutProps) => {
     localStorage.setItem("sidebarCollapsed", String(newValue));
   };
 
-  // Initialize WebSocket for announcements
+  // Listen for announcements from shared socket
   useEffect(() => {
-    if (!token) return;
+    if (!socket) return;
 
-    const socket = io(window.location.origin, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
-
-    socketRef.current = socket;
-
-    // Listen for announcements
     const handleAnnouncementReceived = (data: Announcement) => {
       console.log("[Layout] Announcement received:", data);
       setCurrentAnnouncement(data);
@@ -82,9 +71,8 @@ export const Layout = ({ children }: LayoutProps) => {
 
     return () => {
       socket.off("announcement-received", handleAnnouncementReceived);
-      socket.disconnect();
     };
-  }, [token]);
+  }, [socket]);
 
   return (
     <>
