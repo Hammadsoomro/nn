@@ -71,7 +71,10 @@ async function startServer() {
               timestamp: data.timestamp,
             };
 
-            console.log(`[Socket.IO] Broadcasting to room ${data.chatId}:`, messageToEmit);
+            console.log(
+              `[Socket.IO] Broadcasting to room ${data.chatId}:`,
+              messageToEmit,
+            );
             io.to(data.chatId).emit("new-message", messageToEmit);
           } catch (error) {
             console.error("[Socket.IO] Error handling send-message:", error);
