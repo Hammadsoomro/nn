@@ -4,6 +4,7 @@ import path from "path";
 import { createServer } from "./server";
 import { Server } from "socket.io";
 import { setIO } from "./server/websocket-io";
+import { handleSocketAuth } from "./server/middleware/auth";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
