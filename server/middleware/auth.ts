@@ -65,3 +65,53 @@ export const authMiddleware = async (
     res.status(401).json({ error: "Authentication failed" });
   }
 };
+
+// Socket.IO authentication handler
+export const handleSocketAuth = async (socket: AuthenticatedSocket) => {
+  try {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+      console.log(
+        `[Socket.IO] Connection rejected: No token provided (${socket.id})`,
+      );
+      socket.disconnect();
+      return;
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      console.log(
+        `[Socket.IO] Connection rejected: Invalid or expired token (${socket.id})`,
+      );
+      socket.disconnect();
+      return;
+    }
+
+    // Store authentication data on socket
+    socket.data.userId = decoded.id;
+    socket.data.email = decoded.email;
+    socket.data.role = decoded.role;
+
+    // Extract teamId from user document
+    try {
+      const collections = getCollections();
+      const user = await collections.users.findOne({
+        _id: new ObjectId(decoded.id),
+      });
+
+      if (user) {
+        socket.data.teamId = user.teamId;
+      }
+    } catch (error) {
+      console.error("[Socket.IO] Error fetching user data:", error);
+    }
+
+    console.log(
+      `[Socket.IO] User authenticated: ${socket.data.userId} (${socket.id})`,
+    );
+  } catch (error) {
+    console.error("[Socket.IO] Authentication error:", error);
+    socket.disconnect();
+  }
+};
