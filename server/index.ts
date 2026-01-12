@@ -47,14 +47,29 @@ export async function createServer() {
 
   const app = express();
 
-  // Middleware
+  // Middleware - Fixed CORS configuration
+  // Never allow wildcard (*) with credentials: true
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080",
+  ];
+
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+  }
+
   const corsOptions = {
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:8080",
-      process.env.FRONTEND_URL || "*",
-    ],
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
