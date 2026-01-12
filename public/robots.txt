@@ -1,8 +1,18 @@
+# Sitemap
+Sitemap: https://taskflow.app/sitemap.xml
+
+# Allow all robots
+User-agent: *
+Allow: /
+
+# Specific bot rules
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +20,12 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+# Block some bots that consume too much bandwidth
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
