@@ -42,86 +42,88 @@ const App = () => (
           <SocketProvider>
             <ChatProvider>
               <ErrorBoundary>
-              <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
+                <BrowserRouter>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/signup" element={<Signup />} />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
+                      {/* Protected Routes */}
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <ProtectedRoute>
+                            <Dashboard />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                {/* Admin Only Routes */}
-                <Route
-                  path="/sorter"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <NumbersSorter />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/queued"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <QueuedList />
-                    </ProtectedRoute>
-                  }
-                />
+                      {/* Admin Only Routes */}
+                      <Route
+                        path="/sorter"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <NumbersSorter />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/queued"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <QueuedList />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                {/* Member Routes */}
-                <Route
-                  path="/inbox"
-                  element={
-                    <ProtectedRoute>
-                      <NumbersInbox />
-                    </ProtectedRoute>
-                  }
-                />
+                      {/* Member Routes */}
+                      <Route
+                        path="/inbox"
+                        element={
+                          <ProtectedRoute>
+                            <NumbersInbox />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                {/* Team Routes */}
-                <Route
-                  path="/chat"
-                  element={
-                    <ProtectedRoute>
-                      <TeamChat />
-                    </ProtectedRoute>
-                  }
-                />
+                      {/* Team Routes */}
+                      <Route
+                        path="/chat"
+                        element={
+                          <ProtectedRoute>
+                            <TeamChat />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                <Route
-                  path="/history"
-                  element={
-                    <ProtectedRoute>
-                      <History />
-                    </ProtectedRoute>
-                  }
-                />
+                      <Route
+                        path="/history"
+                        element={
+                          <ProtectedRoute>
+                            <History />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  }
-                />
+                      <Route
+                        path="/settings"
+                        element={
+                          <ProtectedRoute>
+                            <Settings />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                {/* Catch All */}
-                <Route
-                  path="/"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              </BrowserRouter>
+                      {/* Catch All */}
+                      <Route
+                        path="/"
+                        element={<Navigate to="/dashboard" replace />}
+                      />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </BrowserRouter>
               </ErrorBoundary>
             </ChatProvider>
           </SocketProvider>
