@@ -19,6 +19,74 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: "dist/spa",
+    // Performance optimization
+    target: "esnext",
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        drop_console: false, // Keep console for debugging, set to true for production
+        drop_debugger: true,
+      },
+      mangle: true,
+      format: {
+        comments: false,
+      },
+    },
+    // Code splitting configuration
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor libraries into separate chunks
+          vendor: ["react", "react-dom", "react-router-dom"],
+          query: ["@tanstack/react-query"],
+          socket: ["socket.io-client"],
+          ui: [
+            "@radix-ui/react-accordion",
+            "@radix-ui/react-alert-dialog",
+            "@radix-ui/react-avatar",
+            "@radix-ui/react-button",
+            "@radix-ui/react-card",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-label",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-scroll-area",
+            "@radix-ui/react-select",
+            "@radix-ui/react-separator",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-tooltip",
+          ],
+        },
+        // Optimize chunk naming for better caching
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId
+            ? chunkInfo.facadeModuleId.split("/").pop()
+            : "chunk";
+          return `chunks/[name]-[hash].js`;
+        },
+        entryFileNames: "[name]-[hash].js",
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split(".");
+          const ext = info[info.length - 1];
+          if (["gif", "png", "jpg", "jpeg"].includes(ext)) {
+            return `images/[name]-[hash][extname]`;
+          } else if (ext === "css") {
+            return `css/[name]-[hash][extname]`;
+          } else if (["woff", "woff2"].includes(ext)) {
+            return `fonts/[name]-[hash][extname]`;
+          }
+          return `[name]-[hash][extname]`;
+        },
+      },
+    },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 600,
+    // Enable source maps for production debugging (set to false to reduce bundle size)
+    sourcemap: false,
+    // CSS handling
+    cssCodeSplit: true,
+    // Compression
+    brotliSize: true,
   },
   plugins: [react(), expressPlugin()],
   resolve: {
