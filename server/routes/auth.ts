@@ -6,7 +6,8 @@ import type {
   AuthResponse,
   User,
 } from "@shared/api";
-import crypto from "crypto";
+import bcryptjs from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
 
@@ -21,26 +22,27 @@ const getJwtSecret = (): string => {
   return secret;
 };
 
-// Helper: Hash password (demo - use bcrypt in production)
-const hashPassword = (password: string): string => {
-  return crypto.createHash("sha256").update(password).digest("hex");
+// Helper: Hash password with bcrypt
+const hashPassword = async (password: string): Promise<string> => {
+  return bcryptjs.hash(password, 10);
 };
 
-// Helper: Create simple token (base64 encoded JSON with hash)
+// Helper: Compare password with bcrypt
+const comparePassword = async (
+  password: string,
+  hash: string,
+): Promise<boolean> => {
+  return bcryptjs.compare(password, hash);
+};
+
+// Helper: Create JWT token
 const createToken = (user: User): string => {
   const payload = {
     id: user._id,
     email: user.email,
     role: user.role,
-    iat: Date.now(),
-    exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
   };
-  const jwtSecret = getJwtSecret();
-  const signature = crypto
-    .createHash("sha256")
-    .update(JSON.stringify(payload) + jwtSecret)
-    .digest("hex");
-  return `${Buffer.from(JSON.stringify(payload)).toString("base64")}.${signature}`;
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "7d" });
 };
 
 // Signup - Creates admin account
