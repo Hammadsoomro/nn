@@ -1,15 +1,69 @@
+# Build configuration
 [build]
   command = "pnpm run build"
   functions = "netlify/functions"
   publish = "dist/spa"
+  environment = { NODE_VERSION = "22" }
 
-
+# Function configuration
 [functions]
-  external_node_modules = ["express"]
+  external_node_modules = [
+    "express",
+    "mongodb",
+    "socket.io",
+    "cors",
+    "dotenv",
+    "jsonwebtoken",
+    "bcryptjs",
+    "zod"
+  ]
   node_bundler = "esbuild"
-  
+  included_files = ["dist/**/*"]
+
+# API routing - redirect /api/* to Netlify Function
 [[redirects]]
-  force = true
   from = "/api/*"
-  status = 200
   to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# SPA routing - redirect all non-matching routes to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Cache headers for static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=600, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+
+# Retry policy for transient failures
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
