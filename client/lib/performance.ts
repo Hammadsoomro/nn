@@ -130,7 +130,7 @@ export function preloadResource(url: string, as: string = "script"): void {
  * Lazy load images using Intersection Observer
  */
 export function lazyLoadImages(): void {
-  if ("IntersectionObserver" not in window) {
+  if (!("IntersectionObserver" in window)) {
     return;
   }
 
