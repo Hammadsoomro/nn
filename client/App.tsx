@@ -28,7 +28,12 @@ const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading fallback component
-const PageLoader = () => <PagePlaceholder />;
+const PageLoader = () => (
+  <PagePlaceholder
+    title="Loading..."
+    description="Please wait while we load the page for you."
+  />
+);
 
 const queryClient = new QueryClient();
 
