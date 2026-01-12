@@ -121,18 +121,27 @@ export const handleLogin: RequestHandler = async (req, res) => {
     });
 
     const validated = schema.parse(body);
-    const hashedPassword = hashPassword(validated.password);
 
     try {
       const collections = getCollections();
 
-      // Find user
+      // Find user by email
       const userRecord = await collections.users.findOne({
         email: validated.email,
-        password: hashedPassword,
       });
 
       if (!userRecord) {
+        res.status(401).json({ error: "Invalid credentials" });
+        return;
+      }
+
+      // Verify password with bcrypt
+      const isPasswordValid = await comparePassword(
+        validated.password,
+        userRecord.password,
+      );
+
+      if (!isPasswordValid) {
         res.status(401).json({ error: "Invalid credentials" });
         return;
       }
