@@ -1,5 +1,11 @@
 import { MongoClient, Db, Collection } from "mongodb";
 
+// Declare global for serverless environments (connection reuse across warm invocations)
+declare global {
+  // eslint-disable-next-line no-var
+  var __mongoClient__: MongoClient | undefined;
+}
+
 let client: MongoClient | null = null;
 let db: Db | null = null;
 
@@ -29,9 +35,26 @@ export async function connectDB(): Promise<Db> {
   }
 
   try {
-    client = new MongoClient(mongoUri);
-    await client.connect();
-    db = client.db("taskflow");
+    // Use globalThis to cache the client across warm invocations in serverless
+    if (!(globalThis as any).__mongoClient__) {
+      const maxPoolSize = parseInt(process.env.MONGO_MAX_POOL_SIZE || "10", 10);
+      const serverSelectionTimeoutMS = parseInt(
+        process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS || "5000",
+        10,
+      );
+
+      (globalThis as any).__mongoClient__ = new MongoClient(mongoUri, {
+        maxPoolSize,
+        serverSelectionTimeoutMS,
+        socketTimeoutMS: 45000,
+      });
+
+      await (globalThis as any).__mongoClient__.connect();
+    }
+
+    client = (globalThis as any).__mongoClient__;
+    const dbName = process.env.MONGODB_DB || "taskflow";
+    db = client.db(dbName);
 
     // Create indexes for better performance
     const usersCollection = db.collection("users");
