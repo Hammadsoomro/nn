@@ -2,6 +2,7 @@ import "./global.css";
 
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
+import { Suspense, lazy } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -12,16 +13,22 @@ import { ChatProvider } from "@/context/ChatContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-import NumbersSorter from "./pages/NumbersSorter";
-import NumbersInbox from "./pages/NumbersInbox";
-import QueuedList from "./pages/QueuedList";
-import TeamChat from "./pages/TeamChat";
-import History from "./pages/History";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
+import PagePlaceholder from "@/components/PagePlaceholder";
+
+// Lazy load pages for better performance
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const NumbersSorter = lazy(() => import("./pages/NumbersSorter"));
+const NumbersInbox = lazy(() => import("./pages/NumbersInbox"));
+const QueuedList = lazy(() => import("./pages/QueuedList"));
+const TeamChat = lazy(() => import("./pages/TeamChat"));
+const History = lazy(() => import("./pages/History"));
+const Settings = lazy(() => import("./pages/Settings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Loading fallback component
+const PageLoader = () => <PagePlaceholder />;
 
 const queryClient = new QueryClient();
 
