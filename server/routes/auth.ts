@@ -73,7 +73,7 @@ export const handleSignup: RequestHandler = async (req, res) => {
 
       // Create admin user with new team
       const teamId = new ObjectId().toHexString();
-      const hashedPassword = hashPassword(validated.password);
+      const hashedPassword = await hashPassword(validated.password);
 
       const result = await collections.users.insertOne({
         email: validated.email,
