@@ -13,7 +13,7 @@ import { ChatProvider } from "@/context/ChatContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import PagePlaceholder from "@/components/PagePlaceholder";
+import { PagePlaceholder } from "@/components/PagePlaceholder";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
