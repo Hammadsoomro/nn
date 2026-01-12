@@ -175,26 +175,12 @@ export const verifyToken = (
   token: string,
 ): { id: string; email: string; role: string } | null => {
   try {
-    const [encodedPayload, signature] = token.split(".");
-    if (!encodedPayload || !signature) return null;
-
-    const payload = JSON.parse(
-      Buffer.from(encodedPayload, "base64").toString(),
-    );
-
-    // Check expiration
-    if (payload.exp < Date.now()) return null;
-
-    // Verify signature
-    const jwtSecret = getJwtSecret();
-    const expectedSignature = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(payload) + jwtSecret)
-      .digest("hex");
-
-    if (signature !== expectedSignature) return null;
-
-    return { id: payload.id, email: payload.email, role: payload.role };
+    const decoded = jwt.verify(token, getJwtSecret()) as {
+      id: string;
+      email: string;
+      role: string;
+    };
+    return { id: decoded.id, email: decoded.email, role: decoded.role };
   } catch {
     return null;
   }
