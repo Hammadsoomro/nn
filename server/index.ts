@@ -166,12 +166,13 @@ export async function createServer() {
 
   // Global error handler
   app.use((err: any, _req: any, res: any, _next: any) => {
-    console.error("[Server] Unhandled error:", err);
+    logger.error("Unhandled error", err);
     res.status(500).json({
       error: "Internal server error",
       message: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   });
 
+  logger.info("✓ Server initialized successfully");
   return app;
 }
