@@ -52,7 +52,10 @@ const createLogger = (namespace: string): Logger => ({
     }
   },
   error: (message: string, error?: any) => {
-    console.error(`[${formatTimestamp()}] [${namespace}] ERROR: ${message}`, error || "");
+    console.error(
+      `[${formatTimestamp()}] [${namespace}] ERROR: ${message}`,
+      error || "",
+    );
   },
 });
 

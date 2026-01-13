@@ -82,7 +82,9 @@ export const handleSocketAuth = async (socket: AuthenticatedSocket) => {
 
     const decoded = verifyToken(token);
     if (!decoded) {
-      logger.debug(`Socket.IO: Connection rejected - invalid token (${socket.id})`);
+      logger.debug(
+        `Socket.IO: Connection rejected - invalid token (${socket.id})`,
+      );
       socket.disconnect();
       return;
     }
@@ -106,7 +108,9 @@ export const handleSocketAuth = async (socket: AuthenticatedSocket) => {
       logger.error("Socket.IO: Error fetching user data", error);
     }
 
-    logger.debug(`Socket.IO: User authenticated - ${socket.data.userId} (${socket.id})`);
+    logger.debug(
+      `Socket.IO: User authenticated - ${socket.data.userId} (${socket.id})`,
+    );
   } catch (error) {
     logger.error("Socket.IO: Authentication error", error);
     socket.disconnect();
