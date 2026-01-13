@@ -75,18 +75,14 @@ export const handleSocketAuth = async (socket: AuthenticatedSocket) => {
     const token = socket.handshake.auth.token;
 
     if (!token) {
-      console.log(
-        `[Socket.IO] Connection rejected: No token provided (${socket.id})`,
-      );
+      logger.debug(`Socket.IO: Connection rejected - no token (${socket.id})`);
       socket.disconnect();
       return;
     }
 
     const decoded = verifyToken(token);
     if (!decoded) {
-      console.log(
-        `[Socket.IO] Connection rejected: Invalid or expired token (${socket.id})`,
-      );
+      logger.debug(`Socket.IO: Connection rejected - invalid token (${socket.id})`);
       socket.disconnect();
       return;
     }
