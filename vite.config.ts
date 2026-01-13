@@ -35,27 +35,26 @@ export default defineConfig(({ mode }) => ({
     // Code splitting configuration
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks: (id) => {
           // Split vendor libraries into separate chunks
-          vendor: ["react", "react-dom", "react-router-dom"],
-          query: ["@tanstack/react-query"],
-          socket: ["socket.io-client"],
-          ui: [
-            "@radix-ui/react-accordion",
-            "@radix-ui/react-alert-dialog",
-            "@radix-ui/react-avatar",
-            "@radix-ui/react-button",
-            "@radix-ui/react-card",
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-label",
-            "@radix-ui/react-popover",
-            "@radix-ui/react-scroll-area",
-            "@radix-ui/react-select",
-            "@radix-ui/react-separator",
-            "@radix-ui/react-tabs",
-            "@radix-ui/react-tooltip",
-          ],
+          if (id.includes("node_modules")) {
+            if (id.includes("react") && id.includes("router")) {
+              return "vendor-react-router";
+            }
+            if (id.includes("react")) {
+              return "vendor-react";
+            }
+            if (id.includes("@tanstack")) {
+              return "vendor-query";
+            }
+            if (id.includes("socket.io-client")) {
+              return "vendor-socket";
+            }
+            if (id.includes("@radix-ui")) {
+              return "vendor-ui";
+            }
+            return "vendor";
+          }
         },
         // Optimize chunk naming for better caching
         chunkFileNames: (chunkInfo) => {
