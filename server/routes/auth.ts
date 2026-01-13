@@ -175,9 +175,7 @@ export const handleLogin: RequestHandler = async (req, res) => {
             },
           },
         );
-        console.log(
-          `[Auth] Upgraded password hash for user: ${userRecord.email}`,
-        );
+        logger.info(`Upgraded password hash for user: ${userRecord.email}`);
       }
 
       const user: User = {
@@ -195,11 +193,11 @@ export const handleLogin: RequestHandler = async (req, res) => {
 
       res.json(response);
     } catch (dbError) {
-      console.error("Database error in login:", dbError);
+      logger.error("Database error in login", dbError);
       res.status(500).json({ error: "Database is not configured" });
     }
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error", error);
     res.status(400).json({ error: "Invalid request" });
   }
 };
