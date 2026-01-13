@@ -1,6 +1,6 @@
 # Build configuration
 [build]
-  command = "pnpm run build"
+  command = "pnpm install --no-frozen-lockfile && pnpm build"
   functions = "netlify/functions"
   publish = "dist/spa"
   environment = { NODE_VERSION = "22" }
