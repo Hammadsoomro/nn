@@ -64,7 +64,3 @@
   [headers.values]
     Cache-Control = "public, max-age=600, must-revalidate"
     X-Content-Type-Options = "nosniff"
-
-# Retry policy for transient failures
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
