@@ -7,6 +7,7 @@ import type {
   User,
 } from "@shared/api";
 import bcryptjs from "bcryptjs";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
