@@ -59,12 +59,12 @@ export const authMiddleware = async (
       }
     } catch (error) {
       // If the user lookup fails, continue anyway with basic auth
-      console.error("Error fetching user data:", error);
+      logger.error("Error fetching user data", error);
     }
 
     next();
   } catch (error) {
-    console.error("Auth middleware error:", error);
+    logger.error("Auth middleware error", error);
     res.status(401).json({ error: "Authentication failed" });
   }
 };
