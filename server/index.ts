@@ -34,14 +34,21 @@ import { sendAnnouncement, getAnnouncements } from "./routes/announcements";
 import { connectDB } from "./db";
 import { authMiddleware } from "./middleware/auth";
 import { getCollections } from "./db";
+import { validateEnvironment } from "./config";
+import { createLogger } from "./logger";
+
+const logger = createLogger("Server");
 
 export async function createServer() {
+  // Validate environment variables first (fail fast if critical vars are missing)
+  validateEnvironment();
+
   // Initialize MongoDB connection
   try {
     await connectDB();
-    console.log("Database initialized successfully");
+    logger.info("✓ Database initialized successfully");
   } catch (error) {
-    console.error("Failed to initialize database:", error);
+    logger.error("Failed to initialize database", error);
     throw error;
   }
 
