@@ -3,10 +3,15 @@
   <head>
     <!-- Charset and Viewport -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
     <!-- SEO Meta Tags -->
-    <title>TaskFlow - Team Management &amp; Real-Time Collaboration Platform</title>
+    <title>
+      TaskFlow - Team Management &amp; Real-Time Collaboration Platform
+    </title>
     <meta
       name="description"
       content="Professional team management platform with real-time chat, queued line tracking, claims management, and advanced collaboration features for teams."
@@ -16,37 +21,76 @@
       content="team management, collaboration, chat, task tracking, queue management, team chat, project management"
     />
     <meta name="author" content="TaskFlow Team" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta
+      name="googlebot"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
     <link rel="canonical" href="https://taskflow.app/" />
 
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: dark)" />
+    <meta
+      name="theme-color"
+      content="#1a1a1a"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#ffffff"
+      media="(prefers-color-scheme: dark)"
+    />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="apple-mobile-web-app-title" content="TaskFlow" />
 
     <!-- Open Graph / Social Media Meta Tags -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://taskflow.app/" />
-    <meta property="og:title" content="TaskFlow - Team Management &amp; Collaboration" />
-    <meta property="og:description" content="Professional team management platform with real-time chat, queued line tracking, and advanced collaboration features." />
+    <meta
+      property="og:title"
+      content="TaskFlow - Team Management &amp; Collaboration"
+    />
+    <meta
+      property="og:description"
+      content="Professional team management platform with real-time chat, queued line tracking, and advanced collaboration features."
+    />
     <meta property="og:image" content="https://taskflow.app/og-image.png" />
     <meta property="og:site_name" content="TaskFlow" />
 
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://taskflow.app/" />
-    <meta name="twitter:title" content="TaskFlow - Team Management &amp; Collaboration" />
-    <meta name="twitter:description" content="Professional team management platform with real-time chat and advanced collaboration features." />
+    <meta
+      name="twitter:title"
+      content="TaskFlow - Team Management &amp; Collaboration"
+    />
+    <meta
+      name="twitter:description"
+      content="Professional team management platform with real-time chat and advanced collaboration features."
+    />
     <meta name="twitter:image" content="https://taskflow.app/og-image.png" />
 
     <!-- Manifest and Icons -->
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192x192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512x512.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/icon-192x192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="/icon-512x512.png"
+    />
     <link rel="apple-touch-icon" href="/icon-192x192.png" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
@@ -57,7 +101,10 @@
     <!-- Security Headers -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <!-- CSP allows unsafe-eval for socket.io-client's debug library dependency -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;"
+    />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
 
     <!-- Additional Meta Tags -->
@@ -90,7 +137,7 @@
             .then((registration) => {
               console.log(
                 "[PWA] Service Worker registered successfully:",
-                registration
+                registration,
               );
 
               // Check for updates periodically
@@ -99,10 +146,7 @@
               }, 60000); // Check every minute
             })
             .catch((error) => {
-              console.log(
-                "[PWA] Service Worker registration failed:",
-                error
-              );
+              console.log("[PWA] Service Worker registration failed:", error);
             });
 
           // Listen for service worker updates
@@ -117,10 +161,7 @@
       }
 
       // Request notification permission for PWA
-      if (
-        "Notification" in window &&
-        Notification.permission === "default"
-      ) {
+      if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
       }
     </script>

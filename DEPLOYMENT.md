@@ -82,16 +82,19 @@ Set the following environment variables in Netlify Site Settings > Build & Deplo
 ## Architecture Overview
 
 ### Frontend (React SPA)
+
 - Built with Vite for optimal bundle size
 - Lazy-loaded routes for better initial load performance
 - Service Worker for offline support and caching
 
 ### Backend (Express + Netlify Functions)
+
 - Express server wrapped with `serverless-http`
 - MongoDB for persistent data storage
 - Socket.IO for real-time communication (requires separate server)
 
 ### Database (MongoDB)
+
 - Connection pooling with configurable pool size
 - Automatic index creation for optimal query performance
 - Global client reuse across serverless invocations
@@ -101,16 +104,19 @@ Set the following environment variables in Netlify Site Settings > Build & Deplo
 ### Frontend Optimizations
 
 ✅ **Code Splitting**
+
 - Routes are lazy-loaded using React.lazy
 - Vendor dependencies are split into separate chunks
 - UI libraries are bundled together
 
 ✅ **Caching Strategies**
+
 - Service Worker caches static assets
 - Network-first strategy for API calls
 - Cache-first strategy for images and fonts
 
 ✅ **Performance Features**
+
 - Minified and optimized JavaScript
 - CSS code splitting
 - Asset fingerprinting for cache busting
@@ -118,11 +124,13 @@ Set the following environment variables in Netlify Site Settings > Build & Deplo
 ### Backend Optimizations
 
 ✅ **Serverless Optimization**
+
 - Proper async handler in Netlify Function
 - Global MongoDB client reuse across warm invocations
 - Connection pooling to prevent connection exhaustion
 
 ✅ **Security**
+
 - bcryptjs for password hashing
 - jsonwebtoken for secure token generation
 - CORS properly configured to prevent security issues
@@ -130,11 +138,13 @@ Set the following environment variables in Netlify Site Settings > Build & Deplo
 ### Database Optimizations
 
 ✅ **Connection Management**
+
 - Client stored globally for reuse
 - Connection pool limits: max 10, server selection timeout 5s
 - Socket timeout: 45s for long-running operations
 
 ✅ **Indexing**
+
 - Automatic index creation on collections
 - Indexes on frequently queried fields (teamId, createdAt, email)
 
@@ -150,18 +160,22 @@ Set the following environment variables in Netlify Site Settings > Build & Deplo
 ### Common Issues & Solutions
 
 #### JWT_SECRET Not Set
+
 - **Error**: "JWT_SECRET environment variable is not set"
 - **Solution**: Set JWT_SECRET in Netlify environment variables
 
 #### MongoDB Connection Timeout
+
 - **Error**: "Server selection timed out after..."
 - **Solution**: Verify MONGODB_URI is correct, check MongoDB whitelist IP
 
 #### CORS Errors
+
 - **Error**: "Access to XMLHttpRequest blocked by CORS policy"
 - **Solution**: Ensure FRONTEND_URL is set correctly in environment variables
 
 #### Socket.IO Connection Issues
+
 - **Issue**: Real-time features not working
 - **Note**: Socket.IO requires a long-running server, not supported on Netlify Functions
 - **Solution**: Deploy Socket.IO server separately (Railway, Heroku, etc.)
@@ -169,27 +183,32 @@ Set the following environment variables in Netlify Site Settings > Build & Deplo
 ## Performance Targets
 
 ### Core Web Vitals
+
 - **LCP** (Largest Contentful Paint): < 2.5s
-- **FID** (First Input Delay): < 100ms  
+- **FID** (First Input Delay): < 100ms
 - **CLS** (Cumulative Layout Shift): < 0.1
 
 ### Build Size
+
 - **Initial Bundle**: < 200KB (gzipped)
 - **Total Assets**: < 500KB (gzipped)
 
 ### Load Time
+
 - **First Contentful Paint**: < 1.5s
 - **Time to Interactive**: < 3.5s
 
 ## SEO & PWA
 
 ### PWA Features
+
 ✅ Web App Manifest (`manifest.webmanifest`)
 ✅ Service Worker (`sw.js`)
 ✅ Offline Support
 ✅ Install Prompts
 
 ### SEO Features
+
 ✅ Meta Tags (Open Graph, Twitter Card)
 ✅ Schema Markup (JSON-LD)
 ✅ Sitemap (`sitemap.xml`)
@@ -233,6 +252,7 @@ If issues occur after deployment:
 ## Support
 
 For deployment issues:
+
 1. Check the deployment logs in Netlify
 2. Review error messages in application
 3. Verify environment variables are set correctly
