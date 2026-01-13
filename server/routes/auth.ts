@@ -11,17 +11,10 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
+import { getJwtSecret } from "../config";
+import { createLogger } from "../logger";
 
-// Helper: Get JWT secret from environment
-const getJwtSecret = (): string => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error(
-      "JWT_SECRET environment variable is not set. Cannot create or verify authentication tokens.",
-    );
-  }
-  return secret;
-};
+const logger = createLogger("Auth");
 
 // Helper: Hash password with bcrypt
 const hashPassword = async (password: string): Promise<string> => {
