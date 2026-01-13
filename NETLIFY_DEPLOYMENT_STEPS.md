@@ -25,12 +25,12 @@ Once connected, add these variables in Netlify Dashboard → Settings → Build 
 
 ### **Required Variables:**
 
-| Variable | Value | Example |
-|----------|-------|---------|
-| `MONGODB_URI` | Your MongoDB connection string | `mongodb+srv://Soomro:1992@cluster0.bqlcjok.mongodb.net/?appName=Cluster0` |
-| `JWT_SECRET` | Generate a 32+ character random string | `your-super-secret-jwt-key-here-min-32-chars` |
-| `NODE_ENV` | Production environment | `production` |
-| `FRONTEND_URL` | Your deployed Netlify URL | Will be assigned by Netlify (e.g., `https://taskflow.netlify.app`) |
+| Variable       | Value                                  | Example                                                                    |
+| -------------- | -------------------------------------- | -------------------------------------------------------------------------- |
+| `MONGODB_URI`  | Your MongoDB connection string         | `mongodb+srv://Soomro:1992@cluster0.bqlcjok.mongodb.net/?appName=Cluster0` |
+| `JWT_SECRET`   | Generate a 32+ character random string | `your-super-secret-jwt-key-here-min-32-chars`                              |
+| `NODE_ENV`     | Production environment                 | `production`                                                               |
+| `FRONTEND_URL` | Your deployed Netlify URL              | Will be assigned by Netlify (e.g., `https://taskflow.netlify.app`)         |
 
 ### **How to Generate JWT_SECRET:**
 
@@ -47,12 +47,14 @@ This generates a secure random string. Copy it and paste into Netlify environmen
 ## **STEP 3: Trigger First Deployment**
 
 ### **Option A: Automatic (Recommended)**
+
 1. Push code to GitHub: Use the Push button in the UI (top right)
 2. Netlify automatically detects the commit
 3. Build starts automatically
 4. Watch build progress in Netlify Dashboard
 
 ### **Option B: Manual Trigger**
+
 1. Go to Netlify Dashboard → Your Site → Deploys
 2. Click "Trigger Deploy"
 3. Select branch: `aura-hub`
@@ -86,11 +88,13 @@ Once build is complete, Netlify gives you:
 ## **STEP 6: Verify Everything Works**
 
 ### **Test API Health:**
+
 ```bash
 curl https://your-site.netlify.app/api/health
 ```
 
 **Expected Response:**
+
 ```json
 {
   "status": "healthy",
@@ -99,6 +103,7 @@ curl https://your-site.netlify.app/api/health
 ```
 
 ### **Test Login:**
+
 ```bash
 curl -X POST https://your-site.netlify.app/api/auth/login \
   -H "Content-Type: application/json" \
@@ -109,6 +114,7 @@ curl -X POST https://your-site.netlify.app/api/auth/login \
 ```
 
 ### **Test Frontend:**
+
 - Open `https://your-site.netlify.app` in browser
 - Should load without errors
 - Try logging in with your credentials
@@ -116,28 +122,33 @@ curl -X POST https://your-site.netlify.app/api/auth/login \
 
 ---
 
-## **Troubleshooting** 
+## **Troubleshooting**
 
 ### **Build Fails: "Module not found"**
+
 - Check `package.json` versions
 - Verify all dependencies are installed locally first
 - Run `pnpm install` locally and test
 
 ### **Database Connection Error**
+
 - Verify `MONGODB_URI` is set correctly in Netlify env
 - Check MongoDB Atlas firewall allows Netlify IPs
 - In MongoDB Atlas → Network Access → Add IP: `0.0.0.0/0` (or Netlify IPs)
 
 ### **401 Unauthorized**
+
 - Verify `JWT_SECRET` is set in Netlify env
 - JWT_SECRET must match between sessions
 - Check browser console for auth errors
 
 ### **CORS Errors**
+
 - Verify `FRONTEND_URL` is set to your Netlify URL
 - Check backend CORS configuration in `server/index.ts`
 
 ### **Socket.IO Connection Issues**
+
 - Ensure WebSocket connections are allowed on Netlify
 - Check browser DevTools → Network → WS
 - Verify Socket.IO is connecting to same domain
@@ -167,6 +178,7 @@ curl -X POST https://your-site.netlify.app/api/auth/login \
 ## **Environment Variables Summary**
 
 ### **Local (Development)**
+
 ```env
 MONGODB_URI=mongodb+srv://Soomro:1992@cluster0.bqlcjok.mongodb.net/?appName=Cluster0
 JWT_SECRET=local-test-secret-only-32-chars-minimum
@@ -175,6 +187,7 @@ FRONTEND_URL=http://localhost:8080
 ```
 
 ### **Netlify Production**
+
 ```env
 MONGODB_URI=mongodb+srv://Soomro:1992@cluster0.bqlcjok.mongodb.net/?appName=Cluster0
 JWT_SECRET=your-production-secret-32-chars
@@ -195,6 +208,7 @@ pnpm build:server
 ```
 
 This creates:
+
 - `dist/spa/` → Frontend files (served as static SPA)
 - `dist/server/node-build.mjs` → Netlify Function code
 - `netlify/functions/api.ts` → API handler
@@ -223,6 +237,7 @@ A: Netlify Dashboard → Functions → Logs (real-time server logs)
 ## **You're All Set! 🚀**
 
 Your application is:
+
 - ✅ Fully built and tested
 - ✅ Production-optimized
 - ✅ Security-hardened
