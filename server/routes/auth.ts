@@ -165,6 +165,20 @@ export const handleLogin: RequestHandler = async (req, res) => {
         return;
       }
 
+      // Upgrade SHA256 passwords to bcryptjs on login
+      const isSHA256 = verifySHA256Password(validated.password, userRecord.password);
+      if (isSHA256 && !userRecord.password.startsWith("$2")) {
+        // Old SHA256 password detected, upgrade to bcryptjs
+        const newHashedPassword = await hashPassword(validated.password);
+        await collections.users.updateOne(
+          { _id: userRecord._id },
+          { $set: { password: newHashedPassword, updatedAt: new Date().toISOString() } }
+        );
+        console.log(
+          `[Auth] Upgraded password hash for user: ${userRecord.email}`
+        );
+      }
+
       const user: User = {
         _id: userRecord._id.toString(),
         email: userRecord.email,
