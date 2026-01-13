@@ -28,12 +28,30 @@ const hashPassword = async (password: string): Promise<string> => {
   return bcryptjs.hash(password, 10);
 };
 
-// Helper: Compare password with bcrypt
+// Helper: Verify SHA256 hash (legacy - old passwords)
+const verifySHA256Password = (password: string, hash: string): boolean => {
+  const hashedInput = crypto
+    .createHash("sha256")
+    .update(password)
+    .digest("hex");
+  return hashedInput === hash;
+};
+
+// Helper: Compare password with bcrypt or SHA256 (legacy support)
 const comparePassword = async (
   password: string,
   hash: string,
 ): Promise<boolean> => {
-  return bcryptjs.compare(password, hash);
+  // Try bcryptjs first (new passwords)
+  try {
+    const isBcrypt = await bcryptjs.compare(password, hash);
+    if (isBcrypt) return true;
+  } catch {
+    // Hash is not bcryptjs format, try SHA256
+  }
+
+  // Fall back to SHA256 (legacy passwords)
+  return verifySHA256Password(password, hash);
 };
 
 // Helper: Create JWT token
