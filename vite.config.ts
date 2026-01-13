@@ -21,17 +21,7 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist/spa",
     // Performance optimization
     target: "esnext",
-    minify: "terser",
-    terserOptions: {
-      compress: {
-        drop_console: false, // Keep console for debugging, set to true for production
-        drop_debugger: true,
-      },
-      mangle: true,
-      format: {
-        comments: false,
-      },
-    },
+    minify: "esbuild",
     // Code splitting configuration
     rollupOptions: {
       output: {
