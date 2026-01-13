@@ -3,6 +3,9 @@ import { verifyToken } from "../routes/auth";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
 import { Socket } from "socket.io";
+import { createLogger } from "../logger";
+
+const logger = createLogger("Auth");
 
 export interface AuthRequest extends Request {
   userId: string;
