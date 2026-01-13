@@ -103,14 +103,12 @@ export const handleSocketAuth = async (socket: AuthenticatedSocket) => {
         socket.data.teamId = user.teamId;
       }
     } catch (error) {
-      console.error("[Socket.IO] Error fetching user data:", error);
+      logger.error("Socket.IO: Error fetching user data", error);
     }
 
-    console.log(
-      `[Socket.IO] User authenticated: ${socket.data.userId} (${socket.id})`,
-    );
+    logger.debug(`Socket.IO: User authenticated - ${socket.data.userId} (${socket.id})`);
   } catch (error) {
-    console.error("[Socket.IO] Authentication error:", error);
+    logger.error("Socket.IO: Authentication error", error);
     socket.disconnect();
   }
 };
