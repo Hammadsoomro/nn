@@ -3,6 +3,7 @@
 ## 🚀 Production Ready Checklist
 
 ### ✅ Project Status
+
 - [x] Source code clean and optimized
 - [x] Dependencies updated and secured
 - [x] Serverless function handler configured
@@ -23,6 +24,7 @@
 Set these variables in your Netlify site settings:
 
 **Critical Variables:**
+
 ```
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?appName=taskflow
 JWT_SECRET=<your-secure-random-string-minimum-32-characters>
@@ -30,6 +32,7 @@ NODE_ENV=production
 ```
 
 **Optional Variables:**
+
 ```
 MONGODB_DB=taskflow
 MONGO_MAX_POOL_SIZE=10
@@ -40,6 +43,7 @@ FRONTEND_URL=https://your-netlify-domain.netlify.app
 ### 2. Database Preparation
 
 Ensure your MongoDB:
+
 - ✅ Has proper connection string with IP whitelist including Netlify's IPs
 - ✅ Connection timeout is set appropriately (5000-10000ms recommended)
 - ✅ Automatic index creation is enabled (app handles this)
@@ -47,6 +51,7 @@ Ensure your MongoDB:
 ### 3. Build Verification
 
 The build process:
+
 ```bash
 pnpm install      # Install dependencies
 pnpm run build    # Build client (dist/spa) and server
@@ -60,12 +65,14 @@ pnpm run build    # Build client (dist/spa) and server
 ## 🔧 Architecture Overview
 
 ### Frontend
+
 - **Type**: React SPA (Single Page Application)
 - **Build Output**: `dist/spa/`
 - **Hosting**: Netlify CDN (automatic)
 - **Served by**: Static hosting + SPA routing
 
 ### Backend
+
 - **Type**: Express.js wrapped with serverless-http
 - **Deployment**: Netlify Functions
 - **Function Handler**: `netlify/functions/api.ts`
@@ -73,6 +80,7 @@ pnpm run build    # Build client (dist/spa) and server
 - **Routing**: `/api/*` routes redirect to function
 
 ### Database
+
 - **Type**: MongoDB (Atlas recommended)
 - **Connection**: Global client reuse across warm invocations
 - **Pooling**: maxPoolSize: 10 (serverless optimized)
@@ -84,6 +92,7 @@ pnpm run build    # Build client (dist/spa) and server
 ### netlify.toml Overview
 
 **Build Settings:**
+
 ```toml
 [build]
   command = "pnpm run build"
@@ -93,6 +102,7 @@ pnpm run build    # Build client (dist/spa) and server
 ```
 
 **Function Configuration:**
+
 ```toml
 [functions]
   external_node_modules = [
@@ -103,10 +113,12 @@ pnpm run build    # Build client (dist/spa) and server
 ```
 
 **Routing:**
+
 - `/api/*` → Netlify Function
 - `/*` → `index.html` (SPA routing)
 
 **Security Headers:**
+
 - X-Content-Type-Options: nosniff
 - X-Frame-Options: DENY
 - X-XSS-Protection: 1; mode=block
@@ -117,17 +129,20 @@ pnpm run build    # Build client (dist/spa) and server
 ## 🔒 Security Configuration
 
 ### Authentication Flow
+
 1. User logs in via `/api/auth/login`
 2. Server returns JWT token (expires: 7 days)
 3. Token stored in client localStorage
 4. All API requests include `Authorization: Bearer <token>` header
 
 ### Password Security
+
 - Hashing: bcryptjs (10 rounds)
 - Salting: Automatic with bcryptjs
 - Verification: Constant-time comparison
 
 ### API Security
+
 - CORS: Whitelist only your domain
 - Rate limiting: Handled by Netlify
 - Timeout: 10s default (serverless limit)
@@ -137,11 +152,13 @@ pnpm run build    # Build client (dist/spa) and server
 ## 📦 Deployment Steps
 
 ### Step 1: Connect Netlify
+
 1. Click [Connect to Netlify](#open-mcp-popover)
 2. Authorize the connection
 3. Create new site or select existing
 
 ### Step 2: Configure Environment
+
 1. Go to Netlify Site Settings
 2. Build & Deploy → Environment
 3. Add environment variables:
@@ -151,6 +168,7 @@ pnpm run build    # Build client (dist/spa) and server
    - `NODE_ENV=production`
 
 ### Step 3: Trigger Deploy
+
 1. Push code to repository or manually trigger build
 2. Netlify automatically:
    - Runs `pnpm run build`
@@ -159,6 +177,7 @@ pnpm run build    # Build client (dist/spa) and server
    - Deploys to CDN and Functions
 
 ### Step 4: Verify Deployment
+
 ```bash
 curl https://your-domain.netlify.app/api/health
 # Expected response: { "status": "ok", "database": "connected" }
@@ -169,11 +188,13 @@ curl https://your-domain.netlify.app/api/health
 ## 🧪 Testing Production
 
 ### Health Check
+
 ```bash
 curl https://your-domain.netlify.app/api/health
 ```
 
 ### Authentication Test
+
 ```bash
 # Signup
 curl -X POST https://your-domain.netlify.app/api/auth/signup \
@@ -194,6 +215,7 @@ curl -X POST https://your-domain.netlify.app/api/auth/login \
 ```
 
 ### Protected Route Test
+
 ```bash
 curl https://your-domain.netlify.app/api/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
@@ -236,18 +258,21 @@ curl https://your-domain.netlify.app/api/profile \
 ## 🔄 Deployment Best Practices
 
 ### Before Each Deploy
+
 - [ ] Run local tests: `pnpm run test`
 - [ ] Type check: `pnpm run typecheck`
 - [ ] Format code: `pnpm run format.fix`
 - [ ] Verify build locally: `pnpm run build`
 
 ### Monitoring Post-Deploy
+
 - [ ] Check Netlify function logs
 - [ ] Monitor error rates
 - [ ] Test critical user flows
 - [ ] Verify database connectivity
 
 ### Environment Variable Management
+
 - ✅ Never commit secrets to repository
 - ✅ Use Netlify environment variables
 - ✅ Rotate JWT_SECRET periodically
@@ -260,30 +285,36 @@ curl https://your-domain.netlify.app/api/profile \
 ### Build Failures
 
 **Error: "No matching version found for..."**
+
 - **Solution**: Check package.json versions are published on npm
 - **Example**: jsonwebtoken@9.1.2 doesn't exist → use 9.0.3
 
 **Error: "Cannot find module..."**
+
 - **Solution**: Ensure all imports use correct paths
 - **Check**: Path aliases in tsconfig.json and vite.config.ts
 
 ### Runtime Errors
 
 **Error: "MONGODB_URI is not set"**
+
 - **Solution**: Add MONGODB_URI to Netlify environment
 - **Verify**: Netlify Site Settings → Environment
 
 **Error: "JWT_SECRET is not set"**
+
 - **Solution**: Add JWT_SECRET to Netlify environment
 - **Generate**: Use `openssl rand -base64 32`
 
 **Error: "Connection timed out"**
+
 - **Solution**: Check MongoDB whitelist includes Netlify IPs
 - **Verify**: MongoDB Atlas → Network Access
 
 ### Cold Start Issues
 
 **Slow first request (10+ seconds)**
+
 - Normal for Netlify Functions (expected behavior)
 - Subsequent requests are faster (warm invocations)
 - Consider upgrading Netlify plan for better cold starts
@@ -293,12 +324,14 @@ curl https://your-domain.netlify.app/api/profile \
 ## 📊 Performance Targets
 
 ### API Response Times
+
 - **Health check**: < 1s (includes DB connection)
 - **Login/Signup**: < 2s (includes hashing)
 - **Chat messages**: < 500ms (cached)
 - **List operations**: < 500ms (indexed queries)
 
 ### Serverless Limits
+
 - **Execution time**: 10 seconds (hard limit)
 - **Memory**: 1024MB
 - **Max payload**: 6MB
@@ -308,6 +341,7 @@ curl https://your-domain.netlify.app/api/profile \
 ## 🔐 Production Checklist
 
 ### Security
+
 - [ ] JWT_SECRET is strong (32+ characters)
 - [ ] CORS origin is specific (not wildcard)
 - [ ] Database credentials are secure
@@ -315,18 +349,21 @@ curl https://your-domain.netlify.app/api/profile \
 - [ ] Security headers are set
 
 ### Reliability
+
 - [ ] Database has backups enabled
 - [ ] Error logging is configured
 - [ ] Health checks are working
 - [ ] Failover strategy is in place
 
 ### Performance
+
 - [ ] CDN is enabled (Netlify default)
 - [ ] Code splitting is working
 - [ ] Service Worker is registered
 - [ ] Images are optimized
 
 ### Maintenance
+
 - [ ] Dependencies are up to date
 - [ ] Security patches are applied
 - [ ] Monitoring is configured
@@ -337,11 +374,13 @@ curl https://your-domain.netlify.app/api/profile \
 ## 📞 Support & Monitoring
 
 ### Netlify Dashboard
+
 - Function logs: Site Settings → Functions
 - Performance: Analytics section
 - Errors: Functions tab → Logs
 
 ### Recommended Tools
+
 - Sentry: Error tracking
 - LogRocket: Session replay
 - Datadog: Monitoring
@@ -352,6 +391,7 @@ curl https://your-domain.netlify.app/api/profile \
 ## 🎯 Next Steps
 
 1. **Verify Environment Variables**
+
    ```
    Set MONGODB_URI, JWT_SECRET, and FRONTEND_URL
    ```
