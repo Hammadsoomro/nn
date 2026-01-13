@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5b21b6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" fill="url(#grad)" rx="45"/>
+  <g transform="translate(48, 48)">
+    <!-- Stylized task/chat icon -->
+    <rect x="0" y="0" width="96" height="96" fill="none"/>
+    <path d="M 20 20 L 76 20 L 76 60 L 20 60 Z" fill="white" opacity="0.9"/>
+    <rect x="20" y="28" width="12" height="4" fill="#7c3aed"/>
+    <rect x="20" y="36" width="12" height="4" fill="#7c3aed"/>
+    <rect x="20" y="44" width="12" height="4" fill="#7c3aed"/>
+    <rect x="20" y="52" width="12" height="4" fill="#7c3aed"/>
+    <path d="M 40 30 L 70 30 L 70 54 L 40 54 Z" fill="none" stroke="#5b21b6" stroke-width="2"/>
+    <circle cx="55" cy="42" r="8" fill="#5b21b6" opacity="0.6"/>
+    <path d="M 30 65 L 30 80 Q 30 85 35 85 L 60 85 Q 65 85 65 80 L 65 70" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>
