@@ -3,6 +3,9 @@ import { z } from "zod";
 import { getCollections } from "../db";
 import { getIO } from "../websocket-io";
 import { ObjectId } from "mongodb";
+import { createLogger } from "../logger";
+
+const logger = createLogger("Claim");
 
 // Get or create claim settings for team
 export const getClaimSettings: RequestHandler = async (req, res) => {
@@ -45,7 +48,7 @@ export const getClaimSettings: RequestHandler = async (req, res) => {
       cooldownMinutes: settings.cooldownMinutes,
     });
   } catch (error) {
-    console.error("Get claim settings error:", error);
+    logger.error("Get claim settings error", error);
     res.status(500).json({ error: "Failed to get claim settings" });
   }
 };
@@ -98,7 +101,7 @@ export const updateClaimSettings: RequestHandler = async (req, res) => {
       cooldownMinutes: result.value?.cooldownMinutes,
     });
   } catch (error) {
-    console.error("Update claim settings error:", error);
+    logger.error("Update claim settings error", error);
     res.status(400).json({ error: "Invalid request" });
   }
 };
@@ -221,7 +224,7 @@ export const claimNumbers: RequestHandler = async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Claim numbers error:", error);
+    logger.error("Claim numbers error", error);
     res.status(500).json({ error: "Failed to claim numbers" });
   }
 };
@@ -256,7 +259,7 @@ export const getClaimedNumbers: RequestHandler = async (req, res) => {
 
     res.json(formatted);
   } catch (error) {
-    console.error("Get claimed numbers error:", error);
+    logger.error("Get claimed numbers error", error);
     res.status(500).json({ error: "Failed to get claimed numbers" });
   }
 };
@@ -292,7 +295,7 @@ export const releaseClaimedNumbers: RequestHandler = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Release claimed numbers error:", error);
+    logger.error("Release claimed numbers error", error);
     res.status(500).json({ error: "Failed to release claimed numbers" });
   }
 };

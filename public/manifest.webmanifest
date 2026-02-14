@@ -1,7 +1,7 @@
 {
-  "name": "TaskFlow - Team Management & Chat",
+  "name": "TaskFlow - Team Management",
   "short_name": "TaskFlow",
-  "description": "Professional team management, queued line tracking, claims management, and real-time chat collaboration",
+  "description": "Professional team management, queued line tracking, and claims management",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -53,23 +53,10 @@
   "categories": ["productivity", "business"],
   "shortcuts": [
     {
-      "name": "Chat",
-      "short_name": "Chat",
-      "description": "Open team chat",
-      "url": "/chat",
-      "icons": [
-        {
-          "src": "/icon-96x96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
       "name": "Team Members",
       "short_name": "Team",
       "description": "View team members",
-      "url": "/team",
+      "url": "/settings",
       "icons": [
         {
           "src": "/icon-96x96.png",

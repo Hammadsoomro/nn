@@ -113,7 +113,7 @@ export function setOrganizationSchema(): void {
     "@type": "Organization",
     name: "TaskFlow",
     description:
-      "Professional team management platform with real-time chat and collaboration features",
+      "Professional team management platform with queue tracking features",
     url: "https://taskflow.app",
     logo: "https://taskflow.app/icon-192x192.png",
     sameAs: [
@@ -138,7 +138,7 @@ export function setWebApplicationSchema(): void {
     "@type": "WebApplication",
     name: "TaskFlow",
     description:
-      "Professional team management platform with real-time chat and collaboration features",
+      "Professional team management platform with queue tracking features",
     url: "https://taskflow.app",
     applicationCategory: "BusinessApplication",
     offers: {
@@ -176,15 +176,14 @@ export function setBreadcrumbSchema(
  */
 export function resetSEO(): void {
   updateSEO({
-    title: "TaskFlow - Team Management &amp; Real-Time Collaboration Platform",
+    title: "TaskFlow - Team Management &amp; Queue Tracking Platform",
     description:
-      "Professional team management platform with real-time chat, queued line tracking, claims management, and advanced collaboration features for teams.",
+      "Professional team management platform with queued line tracking, claims management, and advanced features for teams.",
     url: window.location.href,
     type: "website",
     keywords: [
       "team management",
       "collaboration",
-      "chat",
       "task tracking",
       "queue management",
     ],

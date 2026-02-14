@@ -2,6 +2,9 @@ import { Router, Request, Response } from "express";
 import { getCollections } from "../db";
 import { getIO } from "../websocket-io";
 import { ObjectId } from "mongodb";
+import { createLogger } from "../logger";
+
+const logger = createLogger("Announcements");
 
 export async function sendAnnouncement(req: Request, res: Response) {
   try {
@@ -58,7 +61,7 @@ export async function sendAnnouncement(req: Request, res: Response) {
 
     res.json({ success: true, announcement: announcement._id.toString() });
   } catch (error) {
-    console.error("[announcements] Error sending announcement:", error);
+    logger.error("Error sending announcement", error);
     res.status(500).json({ error: "Failed to send announcement" });
   }
 }
@@ -76,7 +79,7 @@ export async function getAnnouncements(req: Request, res: Response) {
 
     res.json({ announcements });
   } catch (error) {
-    console.error("[announcements] Error fetching announcements:", error);
+    logger.error("Error fetching announcements", error);
     res.status(500).json({ error: "Failed to fetch announcements" });
   }
 }

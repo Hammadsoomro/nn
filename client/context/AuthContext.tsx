@@ -7,6 +7,9 @@ import {
   ReactNode,
 } from "react";
 import type { User, AuthResponse, UserRole } from "@shared/api";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("Auth");
 
 interface AuthContextType {
   user: User | null;
@@ -36,7 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.error("Failed to restore auth:", error);
+        logger.error("Failed to restore auth", error);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
       }

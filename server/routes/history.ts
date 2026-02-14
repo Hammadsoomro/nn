@@ -1,7 +1,11 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
+import { Filter } from "mongodb";
 import type { HistoryEntry } from "@shared/api";
 import { getCollections } from "../db";
+import { createLogger } from "../logger";
+
+const logger = createLogger("History");
 
 export const addToHistory: RequestHandler = async (req, res) => {
   try {
@@ -32,7 +36,7 @@ export const addToHistory: RequestHandler = async (req, res) => {
 
     res.json({ success: true, entry });
   } catch (error) {
-    console.error("Add to history error:", error);
+    logger.error("Add to history error", error);
     res.status(400).json({ error: "Invalid request" });
   }
 };
@@ -46,7 +50,7 @@ export const getHistory: RequestHandler = async (req, res) => {
 
     const collections = getCollections();
 
-    const filter: any = { teamId };
+    const filter: Filter<any> = { teamId };
 
     // Filter by user if not admin
     if (!isAdmin && userId) {
@@ -86,7 +90,7 @@ export const getHistory: RequestHandler = async (req, res) => {
 
     res.json({ entries: formattedEntries });
   } catch (error) {
-    console.error("Get history error:", error);
+    logger.error("Get history error", error);
     res.status(400).json({ error: "Failed to fetch history" });
   }
 };
@@ -121,7 +125,7 @@ export const searchHistory: RequestHandler = async (req, res) => {
 
     res.json({ entries: formattedEntries });
   } catch (error) {
-    console.error("Search history error:", error);
+    logger.error("Search history error", error);
     res.status(400).json({ error: "Search failed" });
   }
 };

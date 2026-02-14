@@ -4,6 +4,9 @@ import type { QueuedLine } from "@shared/api";
 import { getCollections } from "../db";
 import { getIO } from "../websocket-io";
 import { ObjectId } from "mongodb";
+import { createLogger } from "../logger";
+
+const logger = createLogger("Queued");
 
 export const addToQueue: RequestHandler = async (req, res) => {
   try {
@@ -48,7 +51,7 @@ export const addToQueue: RequestHandler = async (req, res) => {
 
     res.json({ success: true, lines: addedLines });
   } catch (error) {
-    console.error("Add to queue error:", error);
+    logger.error("Add to queue error", error);
     res.status(400).json({ error: "Invalid request" });
   }
 };
@@ -79,7 +82,7 @@ export const getQueuedLines: RequestHandler = async (req, res) => {
 
     res.json({ lines: formattedLines });
   } catch (error) {
-    console.error("Get queued lines error:", error);
+    logger.error("Get queued lines error", error);
     res.status(400).json({ error: "Failed to fetch queued lines" });
   }
 };
@@ -118,7 +121,7 @@ export const clearQueuedLine: RequestHandler = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Clear queued line error:", error);
+    logger.error("Clear queued line error", error);
     res.status(400).json({ error: "Failed to clear line" });
   }
 };

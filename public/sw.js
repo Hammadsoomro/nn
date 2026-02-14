@@ -219,19 +219,6 @@ self.addEventListener("notificationclick", (event) => {
 // Background sync for offline actions
 self.addEventListener("sync", (event) => {
   console.log("[SW] Background sync event:", event.tag);
-
-  if (event.tag === "sync-messages") {
-    event.waitUntil(
-      // Attempt to sync messages when back online
-      fetch("/api/chat/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      }).catch((error) => {
-        console.log("[SW] Sync failed, will retry:", error);
-        throw error; // Rethrow to trigger retry
-      }),
-    );
-  }
 });
 
 // Message handler for client communication

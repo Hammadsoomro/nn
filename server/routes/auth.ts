@@ -113,11 +113,11 @@ export const handleSignup: RequestHandler = async (req, res) => {
 
       res.status(201).json(response);
     } catch (dbError) {
-      console.error("Database error in signup:", dbError);
+      logger.error("Database error in signup", dbError);
       res.status(500).json({ error: "Database is not configured" });
     }
   } catch (error) {
-    console.error("Signup error:", error);
+    logger.error("Signup error", error);
     res.status(400).json({ error: "Invalid request" });
   }
 };

@@ -5,17 +5,6 @@ import { handleDemo } from "./routes/demo";
 import { handleLogin, handleSignup } from "./routes/auth";
 import { addToQueue, getQueuedLines, clearQueuedLine } from "./routes/queued";
 import { addToHistory, getHistory, searchHistory } from "./routes/history";
-import {
-  getOrCreateGroupChat,
-  sendMessage,
-  getMessages,
-  addMemberToGroup,
-  setTyping,
-  getTypingStatus,
-  markMessageAsRead,
-  editMessage,
-  deleteMessage,
-} from "./routes/chat";
 import { createTeamMember, getTeamMembers } from "./routes/members";
 import {
   uploadProfilePicture,
@@ -131,17 +120,6 @@ export async function createServer() {
   app.get("/api/history", authMiddleware, getHistory);
   app.get("/api/history/search", authMiddleware, searchHistory);
 
-  // Chat routes (protected)
-  app.get("/api/chat/group", authMiddleware, getOrCreateGroupChat);
-  app.post("/api/chat/send", authMiddleware, sendMessage);
-  app.get("/api/chat/messages", authMiddleware, getMessages);
-  app.post("/api/chat/group/add-member", authMiddleware, addMemberToGroup);
-  app.post("/api/chat/typing", authMiddleware, setTyping);
-  app.get("/api/chat/typing", authMiddleware, getTypingStatus);
-  app.post("/api/chat/mark-read", authMiddleware, markMessageAsRead);
-  app.post("/api/chat/edit", authMiddleware, editMessage);
-  app.post("/api/chat/delete", authMiddleware, deleteMessage);
-
   // Member routes (protected)
   app.get("/api/members", authMiddleware, getTeamMembers);
   app.post("/api/members", authMiddleware, createTeamMember);
@@ -165,7 +143,7 @@ export async function createServer() {
   app.get("/api/announcements", authMiddleware, getAnnouncements);
 
   // Global error handler
-  app.use((err: any, _req: any, res: any, _next: any) => {
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     logger.error("Unhandled error", err);
     res.status(500).json({
       error: "Internal server error",

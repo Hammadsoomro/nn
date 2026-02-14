@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils";
 import { List, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { io, Socket } from "socket.io-client";
+import { useSocket } from "@/context/SocketContext";
+import { createLogger } from "@/lib/logger";
 import type { QueuedLine } from "@shared/api";
+
+const logger = createLogger("QueuedList");
 
 const ITEMS_PER_PAGE = 100;
 
@@ -17,21 +20,11 @@ export default function QueuedList() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const { socket, isConnected } = useSocket();
 
-  // Initialize Socket.IO connection for real-time updates
+  // Load queued lines and setup real-time updates
   useEffect(() => {
     if (!token) return;
-
-    const socket = io(window.location.origin, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
-
-    socketRef.current = socket;
 
     // Fetch initial queued lines
     const fetchQueued = async () => {
@@ -48,17 +41,13 @@ export default function QueuedList() {
           setError(null);
         } else {
           const errorText = await response.text();
-          console.error(
-            "[QueuedList] Fetch error:",
-            response.status,
-            errorText,
-          );
+          logger.error("Fetch error:", response.status, errorText);
           setError(
             `Failed to load queued lines (${response.status}). Please try again.`,
           );
         }
       } catch (error) {
-        console.error("[QueuedList] Error fetching queued lines:", error);
+        logger.error("Error fetching queued lines", error);
         setError(
           "Failed to load queued lines. Please check your connection and try again.",
         );
@@ -70,19 +59,19 @@ export default function QueuedList() {
     fetchQueued();
 
     // Listen for real-time updates
-    const handleLinesQueued = (data: { count: number }) => {
-      console.log("[QueuedList] Lines queued updated:", data.count);
-      // Re-fetch the list to get the updated data
-      fetchQueued();
-    };
+    if (socket && isConnected) {
+      const handleLinesQueued = (data: { count: number }) => {
+        logger.debug("Lines queued updated, reloading list", data.count);
+        fetchQueued();
+      };
 
-    socket.on("lines-queued-updated", handleLinesQueued);
+      socket.on("lines-queued-updated", handleLinesQueued);
 
-    return () => {
-      socket.off("lines-queued-updated", handleLinesQueued);
-      socket.disconnect();
-    };
-  }, [token]);
+      return () => {
+        socket.off("lines-queued-updated", handleLinesQueued);
+      };
+    }
+  }, [token, socket, isConnected]);
 
   // Reset to first page when lines change
   useEffect(() => {
@@ -103,7 +92,7 @@ export default function QueuedList() {
         setLines(lines.filter((line) => line._id !== lineId));
       }
     } catch (error) {
-      console.error("Error deleting line:", error);
+      logger.error("Error deleting line", error);
     } finally {
       setDeletingId(null);
     }

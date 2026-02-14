@@ -1,6 +1,9 @@
 /**
  * Performance monitoring and optimization utilities
  */
+import { createLogger } from "./logger";
+
+const logger = createLogger("Performance");
 
 /**
  * Report Web Vitals metrics
@@ -16,15 +19,15 @@ export function reportWebVitals(): void {
     try {
       const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1];
-        console.log(
-          "[Performance] LCP:",
+        const lastEntry = entries[entries.length - 1] as any;
+        logger.info(
+          "LCP:",
           lastEntry.renderTime || lastEntry.loadTime,
         );
       });
       lcpObserver.observe({ entryTypes: ["largest-contentful-paint"] });
     } catch (error) {
-      console.log("[Performance] LCP observation not supported");
+      logger.debug("LCP observation not supported");
     }
 
     // Monitor First Input Delay (FID)
@@ -32,12 +35,12 @@ export function reportWebVitals(): void {
       const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry: any) => {
-          console.log("[Performance] FID:", entry.processingDuration);
+          logger.info("FID:", entry.processingDuration);
         });
       });
       fidObserver.observe({ entryTypes: ["first-input"] });
     } catch (error) {
-      console.log("[Performance] FID observation not supported");
+      logger.debug("FID observation not supported");
     }
 
     // Monitor Cumulative Layout Shift (CLS)
@@ -47,13 +50,13 @@ export function reportWebVitals(): void {
         list.getEntries().forEach((entry: any) => {
           if (!entry.hadRecentInput) {
             clsValue += entry.value;
-            console.log("[Performance] CLS:", clsValue);
+            logger.info("CLS:", clsValue);
           }
         });
       });
       clsObserver.observe({ entryTypes: ["layout-shift"] });
     } catch (error) {
-      console.log("[Performance] CLS observation not supported");
+      logger.debug("CLS observation not supported");
     }
   }
 
@@ -61,7 +64,7 @@ export function reportWebVitals(): void {
   window.addEventListener("load", () => {
     const perfData = window.performance.timing;
     const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
-    console.log("[Performance] Page Load Time:", pageLoadTime, "ms");
+    logger.info("Page Load Time:", pageLoadTime, "ms");
 
     // Detailed metrics
     const dnsTime = perfData.domainLookupEnd - perfData.domainLookupStart;
@@ -69,10 +72,10 @@ export function reportWebVitals(): void {
     const ttfb = perfData.responseStart - perfData.navigationStart;
     const renderTime = perfData.domComplete - perfData.domLoading;
 
-    console.log("[Performance] DNS:", dnsTime, "ms");
-    console.log("[Performance] TCP:", tcpTime, "ms");
-    console.log("[Performance] TTFB:", ttfb, "ms");
-    console.log("[Performance] Render Time:", renderTime, "ms");
+    logger.debug("DNS:", dnsTime, "ms");
+    logger.debug("TCP:", tcpTime, "ms");
+    logger.debug("TTFB:", ttfb, "ms");
+    logger.debug("Render Time:", renderTime, "ms");
   });
 }
 
@@ -91,14 +94,14 @@ export function measureExecutionTime(
       return result.then(() => {
         const end = performance.now();
         const duration = end - start;
-        console.log(`[Performance] ${label}: ${duration.toFixed(2)}ms`);
+        logger.debug(`${label}: ${duration.toFixed(2)}ms`);
         return duration;
       });
     }
 
     const end = performance.now();
     const duration = end - start;
-    console.log(`[Performance] ${label}: ${duration.toFixed(2)}ms`);
+    logger.debug(`${label}: ${duration.toFixed(2)}ms`);
     return duration;
   });
 }

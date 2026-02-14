@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useChat } from "@/context/ChatContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useSocket } from "@/context/SocketContext";
 import { Button } from "@/components/ui/button";
@@ -24,6 +23,9 @@ import {
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { ModernSidebar } from "@/components/ModernSidebar";
 import { AnnouncementSlider } from "@/components/AnnouncementSlider";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("Layout");
 
 interface Announcement {
   _id: string;
@@ -62,7 +64,7 @@ export const Layout = ({ children }: LayoutProps) => {
     if (!socket) return;
 
     const handleAnnouncementReceived = (data: Announcement) => {
-      console.log("[Layout] Announcement received:", data);
+      logger.debug("Announcement received", data);
       setCurrentAnnouncement(data);
     };
 

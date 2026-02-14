@@ -6,6 +6,9 @@ import { getIO } from "../websocket-io";
 import { ObjectId } from "mongodb";
 import crypto from "crypto";
 import type { User } from "@shared/api";
+import { createLogger } from "../logger";
+
+const logger = createLogger("Members");
 
 // Hash password helper
 const hashPassword = (password: string): string => {
@@ -76,21 +79,6 @@ export const createTeamMember: RequestHandler = async (
       updatedAt: new Date().toISOString(),
     };
 
-    // Auto-add to team group chat
-    const groupChat = await collections.chatGroups.findOne({
-      teamId: req.teamId,
-      name: "Team Chat",
-    });
-
-    if (groupChat) {
-      await collections.chatGroups.findOneAndUpdate(
-        { _id: groupChat._id },
-        {
-          $addToSet: { members: newUser._id },
-        },
-      );
-    }
-
     // Emit real-time update for member added
     const io = getIO();
     if (io) {
@@ -99,7 +87,7 @@ export const createTeamMember: RequestHandler = async (
 
     res.status(201).json(newUser);
   } catch (error) {
-    console.error("Error creating team member:", error);
+    logger.error("Error creating team member", error);
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: "Invalid request", details: error.errors });
       return;
@@ -159,7 +147,7 @@ export const getTeamMembers: RequestHandler = async (req: AuthRequest, res) => {
 
     res.json(formattedMembers);
   } catch (error) {
-    console.error("Error getting team members:", error);
+    logger.error("Error getting team members", error);
     res.status(500).json({ error: "Failed to get team members" });
   }
 };

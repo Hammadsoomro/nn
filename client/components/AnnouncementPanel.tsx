@@ -12,6 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Send, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("AnnouncementPanel");
 
 export function AnnouncementPanel() {
   const { token, isAdmin } = useAuth();
@@ -63,7 +66,7 @@ export function AnnouncementPanel() {
         toast.error(error.error || "Failed to send announcement");
       }
     } catch (error) {
-      console.error("Error sending announcement:", error);
+      logger.error("Error sending announcement", error);
       toast.error("Failed to send announcement");
     } finally {
       setLoading(false);

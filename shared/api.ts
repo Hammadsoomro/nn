@@ -73,26 +73,3 @@ export interface ClaimSettings {
   cooldownMinutes: number;
   teamId: string;
 }
-
-export interface ChatMessage {
-  _id: string;
-  sender: string;
-  senderName: string;
-  senderPicture?: string;
-  recipient?: string;
-  groupId?: string;
-  content: string;
-  createdAt: string;
-  editedAt?: string;
-  deleted?: boolean;
-  deletedAt?: string;
-  readBy?: string[];
-}
-
-export interface ChatGroup {
-  _id: string;
-  name: string;
-  members: string[];
-  teamId: string;
-  createdAt: string;
-}

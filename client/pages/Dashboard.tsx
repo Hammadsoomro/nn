@@ -20,7 +20,10 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import type { User } from "@shared/api";
 import { TeamMemberCard } from "@/components/TeamMemberCard";
-import { io, Socket } from "socket.io-client";
+import { useSocket } from "@/context/SocketContext";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("Dashboard");
 
 export default function Dashboard() {
   const { user, isAdmin, token } = useAuth();
@@ -50,7 +53,7 @@ export default function Dashboard() {
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const { socket, isConnected } = useSocket();
 
   // Fetch real-time stats and team members with WebSocket support
   useEffect(() => {
@@ -82,14 +85,14 @@ export default function Dashboard() {
             );
           } else {
             const errorText = await membersResponse.text();
-            console.warn(
+            logger.warn(
               "Members fetch error:",
               membersResponse.status,
               errorText,
             );
           }
         } catch (err) {
-          console.error("Members fetch failed:", err);
+          logger.error("Members fetch failed", err);
         }
 
         // Fetch queued lines count
@@ -111,14 +114,14 @@ export default function Dashboard() {
             );
           } else {
             const errorText = await queuedResponse.text();
-            console.error(
+            logger.error(
               "Queued fetch error:",
               queuedResponse.status,
               errorText,
             );
           }
         } catch (err) {
-          console.error("Queued fetch failed:", err);
+          logger.error("Queued fetch failed", err);
         }
 
         // Fetch claimed numbers count for today
@@ -157,7 +160,7 @@ export default function Dashboard() {
               );
             } else {
               const errorText = await claimedResponse.text();
-              console.error(
+              logger.error(
                 "Claimed fetch error:",
                 claimedResponse.status,
                 errorText,
@@ -165,10 +168,10 @@ export default function Dashboard() {
             }
           }
         } catch (err) {
-          console.error("Claimed fetch failed:", err);
+          logger.error("Claimed fetch failed", err);
         }
       } catch (error) {
-        console.error("Error in fetchData:", error);
+        logger.error("Error in fetchData", error);
         setError("Failed to load dashboard data. Please try again.");
       } finally {
         setLoading(false);
@@ -177,19 +180,11 @@ export default function Dashboard() {
 
     fetchData();
 
-    // Set up WebSocket connection for real-time updates
-    if (!socketRef.current && token) {
-      socketRef.current = io(window.location.origin, {
-        auth: { token },
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
-      });
-
+    // Set up WebSocket listeners for real-time updates
+    if (socket && isConnected) {
       // Listen for member updates
-      socketRef.current.on("member-added", (newMember: User) => {
-        console.log("[Dashboard] New member added:", newMember.name);
+      socket.on("member-added", (newMember: User) => {
+        logger.debug("New member added:", newMember.name);
         setTeamMembers((prev) => [...prev, newMember]);
 
         // Update team members count in stats
@@ -202,15 +197,15 @@ export default function Dashboard() {
         );
       });
 
-      socketRef.current.on("member-updated", (updatedMember: User) => {
-        console.log("[Dashboard] Member updated:", updatedMember.name);
+      socket.on("member-updated", (updatedMember: User) => {
+        logger.debug("Member updated:", updatedMember.name);
         setTeamMembers((prev) =>
           prev.map((m) => (m._id === updatedMember._id ? updatedMember : m)),
         );
       });
 
-      socketRef.current.on("member-removed", (memberId: string) => {
-        console.log("[Dashboard] Member removed:", memberId);
+      socket.on("member-removed", (memberId: string) => {
+        logger.debug("Member removed:", memberId);
         setTeamMembers((prev) => prev.filter((m) => m._id !== memberId));
 
         // Update team members count in stats
@@ -227,34 +222,28 @@ export default function Dashboard() {
       });
 
       // Listen for queued lines updates
-      socketRef.current.on(
-        "lines-queued-updated",
-        (data: { count: number }) => {
-          console.log("[Dashboard] Lines queued updated:", data.count);
-          setStats((prev) =>
-            prev.map((stat) =>
-              stat.label === "Lines Queued"
-                ? { ...stat, value: data.count.toString() }
-                : stat,
-            ),
-          );
-        },
-      );
+      socket.on("lines-queued-updated", (data: { count: number }) => {
+        logger.debug("Lines queued updated:", data.count);
+        setStats((prev) =>
+          prev.map((stat) =>
+            stat.label === "Lines Queued"
+              ? { ...stat, value: data.count.toString() }
+              : stat,
+          ),
+        );
+      });
 
       // Listen for claimed today updates
-      socketRef.current.on(
-        "claimed-today-updated",
-        (data: { count: number }) => {
-          console.log("[Dashboard] Claimed today updated:", data.count);
-          setStats((prev) =>
-            prev.map((stat) =>
-              stat.label === "Claimed Today"
-                ? { ...stat, value: data.count.toString() }
-                : stat,
-            ),
-          );
-        },
-      );
+      socket.on("claimed-today-updated", (data: { count: number }) => {
+        logger.debug("Claimed today updated:", data.count);
+        setStats((prev) =>
+          prev.map((stat) =>
+            stat.label === "Claimed Today"
+              ? { ...stat, value: data.count.toString() }
+              : stat,
+          ),
+        );
+      });
     }
 
     // Set up polling for fallback real-time updates (every 30 seconds)
@@ -262,15 +251,15 @@ export default function Dashboard() {
 
     return () => {
       clearInterval(interval);
-      if (socketRef.current) {
-        socketRef.current.off("member-added");
-        socketRef.current.off("member-updated");
-        socketRef.current.off("member-removed");
-        socketRef.current.off("lines-queued-updated");
-        socketRef.current.off("claimed-today-updated");
+      if (socket) {
+        socket.off("member-added");
+        socket.off("member-updated");
+        socket.off("member-removed");
+        socket.off("lines-queued-updated");
+        socket.off("claimed-today-updated");
       }
     };
-  }, [token]);
+  }, [token, socket, isConnected]);
 
   const quickLinks = isAdmin
     ? [
@@ -299,12 +288,6 @@ export default function Dashboard() {
           description: "Claim your numbers",
           icon: Clock,
           path: "/inbox",
-        },
-        {
-          title: "Team Chat",
-          description: "Connect with your team",
-          icon: Users,
-          path: "/chat",
         },
         {
           title: "History",

@@ -1,4 +1,7 @@
 import { MongoClient, Db, Collection } from "mongodb";
+import { createLogger } from "./logger";
+
+const logger = createLogger("Database");
 
 // Declare global for serverless environments (connection reuse across warm invocations)
 declare global {
@@ -13,8 +16,6 @@ export interface DbCollections {
   users: Collection;
   queuedLines: Collection;
   history: Collection;
-  chatMessages: Collection;
-  chatGroups: Collection;
   claimSettings: Collection;
   claimedNumbers: Collection;
   announcements: Collection;
@@ -70,13 +71,6 @@ export async function connectDB(): Promise<Db> {
     await historyCollection.createIndex({ claimedBy: 1 });
     await historyCollection.createIndex({ claimedAt: -1 });
 
-    const chatCollection = db.collection("chatMessages");
-    await chatCollection.createIndex({ teamId: 1 });
-    await chatCollection.createIndex({ createdAt: -1 });
-
-    const groupCollection = db.collection("chatGroups");
-    await groupCollection.createIndex({ teamId: 1 });
-
     const settingsCollection = db.collection("claimSettings");
     await settingsCollection.createIndex({ teamId: 1 });
 
@@ -93,17 +87,15 @@ export async function connectDB(): Promise<Db> {
       users: usersCollection,
       queuedLines: queuedCollection,
       history: historyCollection,
-      chatMessages: chatCollection,
-      chatGroups: groupCollection,
       claimSettings: settingsCollection,
       claimedNumbers: claimedCollection,
       announcements: announcementsCollection,
     };
 
-    console.log("MongoDB connected successfully");
+    logger.info("✓ MongoDB connected successfully");
     return db;
   } catch (error) {
-    console.error("Failed to connect to MongoDB:", error);
+    logger.error("Failed to connect to MongoDB", error);
     throw error;
   }
 }
