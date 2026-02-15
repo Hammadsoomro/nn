@@ -22,6 +22,7 @@ import type { User } from "@shared/api";
 import { TeamMemberCard } from "@/components/TeamMemberCard";
 import { useSocket } from "@/context/SocketContext";
 import { createLogger } from "@/lib/logger";
+import { apiFetch } from "@/lib/api";
 
 const logger = createLogger("Dashboard");
 
@@ -67,59 +68,33 @@ export default function Dashboard() {
       try {
         // Fetch team members
         try {
-          const membersResponse = await fetch("/api/members", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const members = await apiFetch("/api/members", { token });
+          setTeamMembers(members);
 
-          if (membersResponse.ok) {
-            const members = await membersResponse.json();
-            setTeamMembers(members);
-
-            // Update team members count in stats
-            setStats((prev) =>
-              prev.map((stat) =>
-                stat.label === "Team Members"
-                  ? { ...stat, value: members.length.toString() }
-                  : stat,
-              ),
-            );
-          } else {
-            const errorText = await membersResponse.text();
-            logger.warn(
-              "Members fetch error:",
-              membersResponse.status,
-              errorText,
-            );
-          }
+          // Update team members count in stats
+          setStats((prev) =>
+            prev.map((stat) =>
+              stat.label === "Team Members"
+                ? { ...stat, value: members.length.toString() }
+                : stat,
+            ),
+          );
         } catch (err) {
           logger.error("Members fetch failed", err);
         }
 
         // Fetch queued lines count
         try {
-          const queuedResponse = await fetch("/api/queued", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const data = await apiFetch("/api/queued", { token });
+          const count = data.lines ? data.lines.length : 0;
 
-          if (queuedResponse.ok) {
-            const data = await queuedResponse.json();
-            const count = data.lines ? data.lines.length : 0;
-
-            setStats((prev) =>
-              prev.map((stat) =>
-                stat.label === "Lines Queued"
-                  ? { ...stat, value: count.toString() }
-                  : stat,
-              ),
-            );
-          } else {
-            const errorText = await queuedResponse.text();
-            logger.error(
-              "Queued fetch error:",
-              queuedResponse.status,
-              errorText,
-            );
-          }
+          setStats((prev) =>
+            prev.map((stat) =>
+              stat.label === "Lines Queued"
+                ? { ...stat, value: count.toString() }
+                : stat,
+            ),
+          );
         } catch (err) {
           logger.error("Queued fetch failed", err);
         }
@@ -141,31 +116,20 @@ export default function Dashboard() {
             );
           } else {
             // For team members: Show their own claims
-            const claimedResponse = await fetch("/api/claim/numbers", {
-              headers: { Authorization: `Bearer ${token}` },
+            const claimedNumbers = await apiFetch("/api/claim/numbers", {
+              token,
             });
+            const count = Array.isArray(claimedNumbers)
+              ? claimedNumbers.length
+              : 0;
 
-            if (claimedResponse.ok) {
-              const claimedNumbers = await claimedResponse.json();
-              const count = Array.isArray(claimedNumbers)
-                ? claimedNumbers.length
-                : 0;
-
-              setStats((prev) =>
-                prev.map((stat) =>
-                  stat.label === "Today's Claim"
-                    ? { ...stat, value: count.toString() }
-                    : stat,
-                ),
-              );
-            } else {
-              const errorText = await claimedResponse.text();
-              logger.error(
-                "Claimed fetch error:",
-                claimedResponse.status,
-                errorText,
-              );
-            }
+            setStats((prev) =>
+              prev.map((stat) =>
+                stat.label === "Today's Claim"
+                  ? { ...stat, value: count.toString() }
+                  : stat,
+              ),
+            );
           }
         } catch (err) {
           logger.error("Claimed fetch failed", err);

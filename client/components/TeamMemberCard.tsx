@@ -75,10 +75,22 @@ export function TeamMemberCard({ member, index = 0 }: TeamMemberCardProps) {
   const style = getCardStyle(index);
   const maskedNumber = `•••• •••• •••• ${member._id.slice(-4).toUpperCase()}`;
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setIsFlipped(!isFlipped);
+    }
+  };
+
   return (
     <div
-      className="h-56 w-full cursor-pointer"
+      className="h-56 w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl"
       onClick={() => setIsFlipped(!isFlipped)}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`Team member card for ${member.name}. Click to flip.`}
+      aria-pressed={isFlipped}
       style={{
         perspective: "1000px",
       }}

@@ -7,6 +7,7 @@ import { List, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { createLogger } from "@/lib/logger";
+import { apiFetch } from "@/lib/api";
 import type { QueuedLine } from "@shared/api";
 
 const logger = createLogger("QueuedList");
@@ -31,25 +32,15 @@ export default function QueuedList() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch("/api/queued", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setLines(data.lines || []);
-          setError(null);
-        } else {
-          const errorText = await response.text();
-          logger.error("Fetch error:", response.status, errorText);
-          setError(
-            `Failed to load queued lines (${response.status}). Please try again.`,
-          );
-        }
+        const data = await apiFetch("/api/queued", { token });
+        setLines(data.lines || []);
+        setError(null);
       } catch (error) {
         logger.error("Error fetching queued lines", error);
         setError(
-          "Failed to load queued lines. Please check your connection and try again.",
+          error instanceof Error
+            ? error.message
+            : "Failed to load queued lines. Please check your connection and try again."
         );
       } finally {
         setLoading(false);
@@ -83,14 +74,12 @@ export default function QueuedList() {
 
     try {
       setDeletingId(lineId);
-      const response = await fetch(`/api/queued/${lineId}`, {
+      await apiFetch(`/api/queued/${lineId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        token,
       });
 
-      if (response.ok) {
-        setLines(lines.filter((line) => line._id !== lineId));
-      }
+      setLines(lines.filter((line) => line._id !== lineId));
     } catch (error) {
       logger.error("Error deleting line", error);
     } finally {

@@ -56,6 +56,8 @@ export const ModernSidebar = ({
       <button
         onClick={() => onOpenChange(!isOpen)}
         className="fixed top-4 left-4 z-50 md:hidden p-2 bg-sidebar hover:bg-sidebar-accent rounded-lg transition-all"
+        aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+        aria-expanded={isOpen}
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
@@ -63,6 +65,8 @@ export const ModernSidebar = ({
       {/* Sidebar */}
       <aside
         data-collapsed={isCollapsed}
+        role="navigation"
+        aria-label="Main sidebar"
         className={`fixed inset-y-0 left-0 md:sticky md:top-0 z-40 h-screen md:h-auto bg-sidebar border-r border-sidebar-border transform flex flex-col overflow-hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
@@ -221,6 +225,7 @@ export const ModernSidebar = ({
               isCollapsed ? "p-3 justify-center" : "px-4 py-3 gap-3"
             }`}
             title={isCollapsed ? "Logout" : ""}
+            aria-label="Logout"
           >
             <LogOut className="h-5 w-5 flex-shrink-0" />
             {!isCollapsed && (

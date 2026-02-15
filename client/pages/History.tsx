@@ -33,26 +33,16 @@ export default function History() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch("/api/history", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setEntries(data.entries || []);
-          setFilteredEntries(data.entries || []);
-          setError(null);
-        } else {
-          const errorText = await response.text();
-          logger.error("Fetch error:", response.status, errorText);
-          setError(
-            `Failed to load history (${response.status}). Please try again.`,
-          );
-        }
+        const data = await apiFetch("/api/history", { token });
+        setEntries(data.entries || []);
+        setFilteredEntries(data.entries || []);
+        setError(null);
       } catch (error) {
         logger.error("Error fetching history", error);
         setError(
-          "Failed to load history. Please check your connection and try again.",
+          error instanceof Error
+            ? error.message
+            : "Failed to load history. Please check your connection and try again."
         );
       } finally {
         setLoading(false);
