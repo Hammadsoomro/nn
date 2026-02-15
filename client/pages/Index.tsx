@@ -20,42 +20,54 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-      <div className="text-center">
-        {/* TODO: FUSION_GENERATION_APP_PLACEHOLDER replace everything here with the actual app! */}
-        <h1 className="text-2xl font-semibold text-slate-800 flex items-center justify-center gap-3">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10">
+      <div className="text-center space-y-6 max-w-md p-8 rounded-2xl bg-card/50 backdrop-blur-sm border border-border shadow-xl">
+        <div className="flex justify-center">
+          <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/20">
+            <span className="text-primary-foreground font-bold text-3xl">◆</span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-foreground flex items-center justify-center gap-3">
+            TaskFlow
+          </h1>
+          <p className="text-muted-foreground">
+            Initializing your workspace...
+          </p>
+        </div>
+
+        <div className="flex justify-center">
           <svg
-            className="animate-spin h-8 w-8 text-slate-400"
+            className="animate-spin h-10 w-10 text-primary"
             viewBox="0 0 50 50"
           >
             <circle
-              className="opacity-30"
+              className="opacity-20"
               cx="25"
               cy="25"
               r="20"
               stroke="currentColor"
-              strokeWidth="5"
+              strokeWidth="4"
               fill="none"
             />
             <circle
-              className="text-slate-600"
+              className="opacity-80"
               cx="25"
               cy="25"
               r="20"
               stroke="currentColor"
-              strokeWidth="5"
+              strokeWidth="4"
               fill="none"
               strokeDasharray="100"
               strokeDashoffset="75"
             />
           </svg>
-          Generating your app...
-        </h1>
-        <p className="mt-4 text-slate-600 max-w-md">
-          Watch the chat on the left for updates that might need your attention
-          to finish generating
+        </div>
+
+        <p className="text-xs text-muted-foreground animate-pulse">
+          Please wait while we connect to the server
         </p>
-        <p className="mt-4 hidden max-w-md">{exampleFromServer}</p>
       </div>
     </div>
   );

@@ -1,17 +1,122 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Charset and Viewport -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TaskFlow - Team Management Platform</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <!-- SEO Meta Tags -->
+    <title>
+      TaskFlow - Team Management &amp; Queue Tracking Platform
+    </title>
     <meta
       name="description"
-      content="Enterprise-grade team collaboration and task management platform with real-time updates and advanced features."
+      content="Professional team management platform with queued line tracking, claims management, and advanced features for teams."
     />
-    <meta name="theme-color" content="#7c3aed" />
+    <meta
+      name="keywords"
+      content="team management, collaboration, task tracking, queue management, project management"
+    />
+    <meta name="author" content="TaskFlow Team" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta
+      name="googlebot"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <link rel="canonical" href="https://taskflow.app/" />
+
+    <!-- PWA Meta Tags -->
+    <meta
+      name="theme-color"
+      content="#1a1a1a"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#ffffff"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="TaskFlow" />
+
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://taskflow.app/" />
+    <meta
+      property="og:title"
+      content="TaskFlow - Team Management &amp; Queue Tracking"
+    />
+    <meta
+      property="og:description"
+      content="Professional team management platform with queued line tracking and advanced features."
+    />
+    <meta property="og:image" content="https://taskflow.app/og-image.png" />
+    <meta property="og:site_name" content="TaskFlow" />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://taskflow.app/" />
+    <meta
+      name="twitter:title"
+      content="TaskFlow - Team Management &amp; Queue Tracking"
+    />
+    <meta
+      name="twitter:description"
+      content="Professional team management platform with advanced team features."
+    />
+    <meta name="twitter:image" content="https://taskflow.app/og-image.png" />
+
+    <!-- Manifest and Icons -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/icon-192x192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="/icon-512x512.png"
+    />
+    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Preconnect to external resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://api.taskflow.app" />
+
+    <!-- Security Headers -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- CSP allows unsafe-eval for socket.io-client's debug library dependency -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Additional Meta Tags -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="darkreader-control" content="enable" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- Preload Critical Resources -->
+    <link rel="preload" as="script" href="/client/App.tsx" />
 
     <script>
-      // Initialize theme from localStorage
+      // Initialize theme from localStorage before rendering
       (function () {
         const theme = localStorage.getItem("theme") || "light";
         const html = document.documentElement;
@@ -20,7 +125,45 @@
         } else {
           html.classList.remove("dark");
         }
+        // Prevent FOUC (Flash of Unstyled Content)
+        html.style.colorScheme = theme;
       })();
+
+      // Register Service Worker for PWA
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js", { scope: "/" })
+            .then((registration) => {
+              console.log(
+                "[PWA] Service Worker registered successfully:",
+                registration,
+              );
+
+              // Check for updates periodically
+              setInterval(() => {
+                registration.update();
+              }, 60000); // Check every minute
+            })
+            .catch((error) => {
+              console.log("[PWA] Service Worker registration failed:", error);
+            });
+
+          // Listen for service worker updates
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            console.log("[PWA] Service Worker updated");
+            // Optionally show a notification to the user about the update
+            if (window.confirm("A new version is available. Reload?")) {
+              window.location.reload();
+            }
+          });
+        });
+      }
+
+      // Request notification permission for PWA
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
     </script>
   </head>
 

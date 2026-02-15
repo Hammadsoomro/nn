@@ -27,6 +27,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AnnouncementPanel } from "@/components/AnnouncementPanel";
+import { createLogger } from "@/lib/logger";
+import type { User as UserType } from "@shared/api";
+
+const logger = createLogger("Settings");
 
 interface ClaimSettings {
   lineCount: number;
@@ -64,7 +68,7 @@ function SorterSettingsPanel() {
           });
         }
       } catch (error) {
-        console.error("Error fetching settings:", error);
+        logger.error("Error fetching settings", error);
       } finally {
         setLoading(false);
       }
@@ -94,11 +98,11 @@ function SorterSettingsPanel() {
         toast.success("Settings updated successfully");
       } else {
         const errorData = await response.json();
-        console.error("Settings save error:", errorData);
+        logger.error("Settings save error", errorData);
         toast.error(errorData.error || "Failed to update settings");
       }
     } catch (error) {
-      console.error("Error saving settings:", error);
+      logger.error("Error saving settings", error);
       toast.error("Failed to update settings");
     } finally {
       setSaving(false);
@@ -206,7 +210,7 @@ function AccountInfoPanel({
   user,
   token,
 }: {
-  user: any;
+  user: UserType | null;
   token: string | null;
 }) {
   const [editName, setEditName] = useState(false);
@@ -239,7 +243,7 @@ function AccountInfoPanel({
         toast.error("Failed to update name");
       }
     } catch (error) {
-      console.error("Error updating name:", error);
+      logger.error("Error updating name", error);
       toast.error("Failed to update name");
     } finally {
       setSaving(false);
@@ -324,7 +328,7 @@ function PasswordChangePanel({
   user,
   token,
 }: {
-  user: any;
+  user: UserType | null;
   token: string | null;
 }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -385,7 +389,7 @@ function PasswordChangePanel({
         toast.error(error.error || "Failed to change password");
       }
     } catch (error) {
-      console.error("Error changing password:", error);
+      logger.error("Error changing password", error);
       toast.error("Failed to change password");
     } finally {
       setSaving(false);
@@ -505,7 +509,7 @@ function PasswordChangePanel({
 // Team Account Creation Component
 function TeamMembersPanel() {
   const { token, isAdmin } = useAuth();
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showPasswords, setShowPasswords] = useState<{
@@ -534,7 +538,7 @@ function TeamMembersPanel() {
           setMembers(data);
         }
       } catch (error) {
-        console.error("Error fetching members:", error);
+        logger.error("Error fetching members", error);
       } finally {
         setLoading(false);
       }
@@ -597,7 +601,7 @@ function TeamMembersPanel() {
         toast.error(error.error || "Failed to create team member");
       }
     } catch (error) {
-      console.error("Error creating member:", error);
+      logger.error("Error creating member", error);
       toast.error("Failed to create team member");
     } finally {
       setSubmitting(false);
@@ -883,7 +887,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       toast.error("Failed to upload profile picture");
-      console.error("Upload error:", error);
+      logger.error("Upload error", error);
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useChat } from "@/context/ChatContext";
 import { formatTime, formatDateOnly } from "@/lib/utils";
 import {
   Home,
@@ -29,7 +28,6 @@ export const ModernSidebar = ({
   onCollapsedChange,
 }: ModernSidebarProps) => {
   const { user, logout, isAdmin } = useAuth();
-  const { unreadCounts } = useChat();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -38,16 +36,10 @@ export const ModernSidebar = ({
     return () => clearInterval(timer);
   }, []);
 
-  const totalUnread = Array.from(unreadCounts.values()).reduce(
-    (sum, count) => sum + count,
-    0,
-  );
-
   const isActive = (path: string) => location.pathname === path;
 
   const menuItems = [
     { label: "Dashboard", icon: Home, path: "/dashboard" },
-    { label: "Team Chat", icon: MessageSquare, path: "/chat" },
     { label: "Numbers Inbox", icon: Clock, path: "/inbox" },
     { label: "History", icon: Clock, path: "/history" },
     ...(isAdmin
@@ -64,6 +56,8 @@ export const ModernSidebar = ({
       <button
         onClick={() => onOpenChange(!isOpen)}
         className="fixed top-4 left-4 z-50 md:hidden p-2 bg-sidebar hover:bg-sidebar-accent rounded-lg transition-all"
+        aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+        aria-expanded={isOpen}
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
@@ -71,6 +65,8 @@ export const ModernSidebar = ({
       {/* Sidebar */}
       <aside
         data-collapsed={isCollapsed}
+        role="navigation"
+        aria-label="Main sidebar"
         className={`fixed inset-y-0 left-0 md:sticky md:top-0 z-40 h-screen md:h-auto bg-sidebar border-r border-sidebar-border transform flex flex-col overflow-hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
@@ -165,8 +161,6 @@ export const ModernSidebar = ({
           >
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isTeamChat = item.path === "/chat";
-              const hasUnread = isTeamChat && totalUnread > 0;
 
               return (
                 <Link
@@ -185,16 +179,6 @@ export const ModernSidebar = ({
                     <span className="text-sm font-medium whitespace-nowrap">
                       {item.label}
                     </span>
-                  )}
-
-                  {/* Unread Badge */}
-                  {hasUnread && !isCollapsed && (
-                    <span className="ml-auto text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
-                      {totalUnread > 99 ? "99+" : totalUnread}
-                    </span>
-                  )}
-                  {hasUnread && isCollapsed && (
-                    <div className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
                   )}
 
                   {/* Collapsed Tooltip */}
@@ -241,6 +225,7 @@ export const ModernSidebar = ({
               isCollapsed ? "p-3 justify-center" : "px-4 py-3 gap-3"
             }`}
             title={isCollapsed ? "Logout" : ""}
+            aria-label="Logout"
           >
             <LogOut className="h-5 w-5 flex-shrink-0" />
             {!isCollapsed && (

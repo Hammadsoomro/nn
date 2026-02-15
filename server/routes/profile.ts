@@ -4,6 +4,9 @@ import { AuthRequest } from "../middleware/auth";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
 import crypto from "crypto";
+import { createLogger } from "../logger";
+
+const logger = createLogger("Profile");
 
 // Hash password helper
 const hashPassword = (password: string): string => {
@@ -17,7 +20,7 @@ export const uploadProfilePicture: RequestHandler = async (
 ) => {
   try {
     if (!req.userId) {
-      console.error("Upload failed: No userId in request");
+      logger.error("Upload failed: No userId in request");
       res.status(401).json({ error: "Authentication required" });
       return;
     }
@@ -25,7 +28,7 @@ export const uploadProfilePicture: RequestHandler = async (
     const { profilePictureUrl } = req.body;
 
     if (!profilePictureUrl) {
-      console.error("Upload failed: No profilePictureUrl provided");
+      logger.error("Upload failed: No profilePictureUrl provided");
       res.status(400).json({ error: "Profile picture URL is required" });
       return;
     }
@@ -43,7 +46,7 @@ export const uploadProfilePicture: RequestHandler = async (
     );
 
     if (!result.value) {
-      console.error("Upload failed: User not found for userId:", req.userId);
+      logger.error(`Upload failed: User not found for userId: ${req.userId}`);
       res.status(404).json({ error: "User not found" });
       return;
     }
@@ -61,7 +64,7 @@ export const uploadProfilePicture: RequestHandler = async (
 
     res.json(updatedUser);
   } catch (error) {
-    console.error("Error uploading profile picture:", error);
+    logger.error("Error uploading profile picture", error);
     res.status(500).json({ error: "Failed to upload profile picture" });
   }
 };
@@ -92,7 +95,7 @@ export const getProfile: RequestHandler = async (req: AuthRequest, res) => {
 
     res.json(userProfile);
   } catch (error) {
-    console.error("Error getting profile:", error);
+    logger.error("Error getting profile", error);
     res.status(500).json({ error: "Failed to get profile" });
   }
 };
@@ -138,7 +141,7 @@ export const updateName: RequestHandler = async (req: AuthRequest, res) => {
 
     res.json(updatedUser);
   } catch (error) {
-    console.error("Error updating name:", error);
+    logger.error("Error updating name", error);
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: "Invalid request" });
       return;
@@ -199,7 +202,7 @@ export const changePassword: RequestHandler = async (
 
     res.json({ message: "Password changed successfully" });
   } catch (error) {
-    console.error("Error changing password:", error);
+    logger.error("Error changing password", error);
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: "Invalid request" });
       return;

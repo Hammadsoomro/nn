@@ -2,12 +2,25 @@ import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../routes/auth";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
+import { Socket } from "socket.io";
+import { createLogger } from "../logger";
+
+const logger = createLogger("Auth");
 
 export interface AuthRequest extends Request {
   userId: string;
   email: string;
   role: string;
   teamId?: string;
+}
+
+export interface AuthenticatedSocket extends Socket {
+  data: {
+    userId?: string;
+    email?: string;
+    role?: string;
+    teamId?: string;
+  };
 }
 
 export const authMiddleware = async (
@@ -46,12 +59,60 @@ export const authMiddleware = async (
       }
     } catch (error) {
       // If the user lookup fails, continue anyway with basic auth
-      console.error("Error fetching user data:", error);
+      logger.error("Error fetching user data", error);
     }
 
     next();
   } catch (error) {
-    console.error("Auth middleware error:", error);
+    logger.error("Auth middleware error", error);
     res.status(401).json({ error: "Authentication failed" });
+  }
+};
+
+// Socket.IO authentication handler
+export const handleSocketAuth = async (socket: AuthenticatedSocket) => {
+  try {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+      logger.debug(`Socket.IO: Connection rejected - no token (${socket.id})`);
+      socket.disconnect();
+      return;
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      logger.debug(
+        `Socket.IO: Connection rejected - invalid token (${socket.id})`,
+      );
+      socket.disconnect();
+      return;
+    }
+
+    // Store authentication data on socket
+    socket.data.userId = decoded.id;
+    socket.data.email = decoded.email;
+    socket.data.role = decoded.role;
+
+    // Extract teamId from user document
+    try {
+      const collections = getCollections();
+      const user = await collections.users.findOne({
+        _id: new ObjectId(decoded.id),
+      });
+
+      if (user) {
+        socket.data.teamId = user.teamId;
+      }
+    } catch (error) {
+      logger.error("Socket.IO: Error fetching user data", error);
+    }
+
+    logger.debug(
+      `Socket.IO: User authenticated - ${socket.data.userId} (${socket.id})`,
+    );
+  } catch (error) {
+    logger.error("Socket.IO: Authentication error", error);
+    socket.disconnect();
   }
 };

@@ -6,30 +6,55 @@ import type {
   AuthResponse,
   User,
 } from "@shared/api";
+import bcryptjs from "bcryptjs";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { getCollections } from "../db";
 import { ObjectId } from "mongodb";
+import { getJwtSecret } from "../config";
+import { createLogger } from "../logger";
 
-// Helper: Hash password (demo - use bcrypt in production)
-const hashPassword = (password: string): string => {
-  return crypto.createHash("sha256").update(password).digest("hex");
+const logger = createLogger("Auth");
+
+// Helper: Hash password with bcrypt
+const hashPassword = async (password: string): Promise<string> => {
+  return bcryptjs.hash(password, 10);
 };
 
-// Helper: Create simple token (base64 encoded JSON with hash)
+// Helper: Verify SHA256 hash (legacy - old passwords)
+const verifySHA256Password = (password: string, hash: string): boolean => {
+  const hashedInput = crypto
+    .createHash("sha256")
+    .update(password)
+    .digest("hex");
+  return hashedInput === hash;
+};
+
+// Helper: Compare password with bcrypt or SHA256 (legacy support)
+const comparePassword = async (
+  password: string,
+  hash: string,
+): Promise<boolean> => {
+  // Try bcryptjs first (new passwords)
+  try {
+    const isBcrypt = await bcryptjs.compare(password, hash);
+    if (isBcrypt) return true;
+  } catch {
+    // Hash is not bcryptjs format, try SHA256
+  }
+
+  // Fall back to SHA256 (legacy passwords)
+  return verifySHA256Password(password, hash);
+};
+
+// Helper: Create JWT token
 const createToken = (user: User): string => {
   const payload = {
     id: user._id,
     email: user.email,
     role: user.role,
-    iat: Date.now(),
-    exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
   };
-  const jwtSecret = process.env.JWT_SECRET || "demo-secret";
-  const signature = crypto
-    .createHash("sha256")
-    .update(JSON.stringify(payload) + jwtSecret)
-    .digest("hex");
-  return `${Buffer.from(JSON.stringify(payload)).toString("base64")}.${signature}`;
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "7d" });
 };
 
 // Signup - Creates admin account
@@ -60,7 +85,7 @@ export const handleSignup: RequestHandler = async (req, res) => {
 
       // Create admin user with new team
       const teamId = new ObjectId().toHexString();
-      const hashedPassword = hashPassword(validated.password);
+      const hashedPassword = await hashPassword(validated.password);
 
       const result = await collections.users.insertOne({
         email: validated.email,
@@ -88,11 +113,11 @@ export const handleSignup: RequestHandler = async (req, res) => {
 
       res.status(201).json(response);
     } catch (dbError) {
-      console.error("Database error in signup:", dbError);
+      logger.error("Database error in signup", dbError);
       res.status(500).json({ error: "Database is not configured" });
     }
   } catch (error) {
-    console.error("Signup error:", error);
+    logger.error("Signup error", error);
     res.status(400).json({ error: "Invalid request" });
   }
 };
@@ -108,20 +133,49 @@ export const handleLogin: RequestHandler = async (req, res) => {
     });
 
     const validated = schema.parse(body);
-    const hashedPassword = hashPassword(validated.password);
 
     try {
       const collections = getCollections();
 
-      // Find user
+      // Find user by email
       const userRecord = await collections.users.findOne({
         email: validated.email,
-        password: hashedPassword,
       });
 
       if (!userRecord) {
         res.status(401).json({ error: "Invalid credentials" });
         return;
+      }
+
+      // Verify password with bcrypt
+      const isPasswordValid = await comparePassword(
+        validated.password,
+        userRecord.password,
+      );
+
+      if (!isPasswordValid) {
+        res.status(401).json({ error: "Invalid credentials" });
+        return;
+      }
+
+      // Upgrade SHA256 passwords to bcryptjs on login
+      const isSHA256 = verifySHA256Password(
+        validated.password,
+        userRecord.password,
+      );
+      if (isSHA256 && !userRecord.password.startsWith("$2")) {
+        // Old SHA256 password detected, upgrade to bcryptjs
+        const newHashedPassword = await hashPassword(validated.password);
+        await collections.users.updateOne(
+          { _id: userRecord._id },
+          {
+            $set: {
+              password: newHashedPassword,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        );
+        logger.info(`Upgraded password hash for user: ${userRecord.email}`);
       }
 
       const user: User = {
@@ -139,11 +193,11 @@ export const handleLogin: RequestHandler = async (req, res) => {
 
       res.json(response);
     } catch (dbError) {
-      console.error("Database error in login:", dbError);
+      logger.error("Database error in login", dbError);
       res.status(500).json({ error: "Database is not configured" });
     }
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error", error);
     res.status(400).json({ error: "Invalid request" });
   }
 };
@@ -153,26 +207,12 @@ export const verifyToken = (
   token: string,
 ): { id: string; email: string; role: string } | null => {
   try {
-    const [encodedPayload, signature] = token.split(".");
-    if (!encodedPayload || !signature) return null;
-
-    const payload = JSON.parse(
-      Buffer.from(encodedPayload, "base64").toString(),
-    );
-
-    // Check expiration
-    if (payload.exp < Date.now()) return null;
-
-    // Verify signature
-    const jwtSecret = process.env.JWT_SECRET || "demo-secret";
-    const expectedSignature = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(payload) + jwtSecret)
-      .digest("hex");
-
-    if (signature !== expectedSignature) return null;
-
-    return { id: payload.id, email: payload.email, role: payload.role };
+    const decoded = jwt.verify(token, getJwtSecret()) as {
+      id: string;
+      email: string;
+      role: string;
+    };
+    return { id: decoded.id, email: decoded.email, role: decoded.role };
   } catch {
     return null;
   }

@@ -5,9 +5,12 @@ import { Clock, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
+import { createLogger } from "@/lib/logger";
 import { formatDateTime } from "@/lib/utils";
-import { io, Socket } from "socket.io-client";
 import type { HistoryEntry } from "@shared/api";
+
+const logger = createLogger("History");
 
 const ITEMS_PER_PAGE = 100;
 
@@ -19,51 +22,27 @@ export default function History() {
   const [filteredEntries, setFilteredEntries] = useState<HistoryEntry[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const { socket, isConnected } = useSocket();
 
-  // Initialize Socket.IO connection for real-time updates
+  // Load history entries and setup real-time updates
   useEffect(() => {
     if (!token) return;
-
-    const socket = io(window.location.origin, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
-
-    socketRef.current = socket;
 
     // Fetch initial history entries
     const fetchHistory = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch("/api/history", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setEntries(data.entries || []);
-          setFilteredEntries(data.entries || []);
-          setError(null);
-        } else {
-          const errorText = await response.text();
-          console.error(
-            "[History] Fetch error:",
-            response.status,
-            errorText,
-          );
-          setError(
-            `Failed to load history (${response.status}). Please try again.`,
-          );
-        }
+        const data = await apiFetch("/api/history", { token });
+        setEntries(data.entries || []);
+        setFilteredEntries(data.entries || []);
+        setError(null);
       } catch (error) {
-        console.error("[History] Error fetching history:", error);
+        logger.error("Error fetching history", error);
         setError(
-          "Failed to load history. Please check your connection and try again.",
+          error instanceof Error
+            ? error.message
+            : "Failed to load history. Please check your connection and try again."
         );
       } finally {
         setLoading(false);
@@ -73,18 +52,19 @@ export default function History() {
     fetchHistory();
 
     // Listen for real-time updates when new lines are claimed
-    const handleClaimedTodayUpdated = () => {
-      console.log("[History] Claimed today updated, refreshing history");
-      fetchHistory();
-    };
+    if (socket && isConnected) {
+      const handleClaimedTodayUpdated = () => {
+        logger.debug("Claimed today updated, refreshing history");
+        fetchHistory();
+      };
 
-    socket.on("claimed-today-updated", handleClaimedTodayUpdated);
+      socket.on("claimed-today-updated", handleClaimedTodayUpdated);
 
-    return () => {
-      socket.off("claimed-today-updated", handleClaimedTodayUpdated);
-      socket.disconnect();
-    };
-  }, [token]);
+      return () => {
+        socket.off("claimed-today-updated", handleClaimedTodayUpdated);
+      };
+    }
+  }, [token, socket, isConnected]);
 
   // Filter entries based on search (searches ALL entries, not just current page)
   useEffect(() => {

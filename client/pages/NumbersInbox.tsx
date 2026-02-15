@@ -6,6 +6,9 @@ import { Clock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("NumbersInbox");
 
 interface ClaimedNumber {
   _id: string;
@@ -42,7 +45,7 @@ export default function NumbersInbox() {
           setSettings(data);
         }
       } catch (error) {
-        console.error("Error fetching settings:", error);
+        logger.error("Error fetching settings", error);
       }
     };
 
@@ -80,16 +83,16 @@ export default function NumbersInbox() {
 
         if (queueResponse.ok) {
           const queueData = await queueResponse.json();
-          console.log("Queued lines fetched:", queueData);
+          logger.debug("Queued lines fetched:", queueData);
           setQueuedLinesAvailable(
             Array.isArray(queueData.lines) && queueData.lines.length > 0,
           );
         } else {
-          console.error("Failed to fetch queued lines:", queueResponse.status);
+          logger.error("Failed to fetch queued lines:", queueResponse.status);
           setQueuedLinesAvailable(false);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        logger.error("Error fetching data", error);
         setQueuedLinesAvailable(false);
       } finally {
         setLoading(false);
@@ -156,7 +159,7 @@ export default function NumbersInbox() {
         toast.error(error.error || "Failed to claim numbers");
       }
     } catch (error) {
-      console.error("Error claiming numbers:", error);
+      logger.error("Error claiming numbers", error);
       toast.error("Failed to claim numbers");
     } finally {
       setClaiming(false);

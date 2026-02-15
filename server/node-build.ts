@@ -1,10 +1,15 @@
 import path from "path";
+import { fileURLToPath } from "url";
 import { createServer } from "./index";
 import { closeDB } from "./db";
 import * as express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import { setIO } from "./websocket-io";
+import { handleSocketAuth } from "./middleware/auth";
+import { createLogger } from "./logger";
+
+const logger = createLogger("ProductionServer");
 
 async function startServer() {
   try {
@@ -22,104 +27,24 @@ async function startServer() {
 
     setIO(io);
 
-    // Socket.io connection handling
-    io.on("connection", (socket) => {
-      console.log(`[Socket.IO] User connected: ${socket.id}`);
+    // Socket.io connection handling with authentication
+    io.on("connection", async (socket) => {
+      // Authenticate socket connection
+      await handleSocketAuth(socket as any);
 
-      socket.on("join-chat", (data: { chatId: string; userId: string }) => {
-        socket.join(data.chatId);
-        console.log(
-          `[Socket.IO] User ${data.userId} joined chat ${data.chatId}. Rooms: ${socket.rooms}`,
-        );
-        socket.broadcast.to(data.chatId).emit("user-joined", {
-          userId: data.userId,
-          timestamp: new Date().toISOString(),
-        });
-      });
+      // If socket was disconnected during auth, exit early
+      if (!socket.connected) return;
 
-      socket.on(
-        "send-message",
-        async (data: {
-          messageId: string;
-          sender: string;
-          senderName: string;
-          chatId: string;
-          recipient?: string;
-          content: string;
-          timestamp: string;
-        }) => {
-          try {
-            console.log(
-              `[Socket.IO] Message from ${data.sender} to ${data.recipient || data.chatId}: "${data.content}"`,
-            );
-
-            const messageToEmit = {
-              messageId: data.messageId,
-              sender: data.sender,
-              senderName: data.senderName,
-              recipient: data.recipient || data.chatId,
-              chatId: data.chatId,
-              content: data.content,
-              timestamp: data.timestamp,
-            };
-
-            console.log(`[Socket.IO] Broadcasting to room ${data.chatId}:`, messageToEmit);
-            io.to(data.chatId).emit("new-message", messageToEmit);
-          } catch (error) {
-            console.error("[Socket.IO] Error handling send-message:", error);
-          }
-        },
-      );
-
-      socket.on(
-        "typing",
-        (data: {
-          chatId: string;
-          userId: string;
-          senderName: string;
-          isTyping: boolean;
-        }) => {
-          socket.broadcast.to(data.chatId).emit("user-typing", {
-            userId: data.userId,
-            senderName: data.senderName,
-            isTyping: data.isTyping,
-          });
-        },
-      );
-
-      socket.on(
-        "message-read",
-        (data: { messageId: string; userId: string }) => {
-          io.emit("message-read", data);
-        },
-      );
-
-      socket.on(
-        "edit-message",
-        (data: { messageId: string; content: string; chatId: string }) => {
-          io.to(data.chatId).emit("message-edited", data);
-        },
-      );
-
-      socket.on(
-        "delete-message",
-        (data: { messageId: string; chatId: string }) => {
-          io.to(data.chatId).emit("message-deleted", data);
-        },
-      );
-
-      socket.on("leave-chat", (data: { chatId: string }) => {
-        socket.leave(data.chatId);
-        console.log(`[Socket.IO] User left chat ${data.chatId}`);
-      });
+      logger.info(`User connected: ${socket.id}`);
 
       socket.on("disconnect", () => {
-        console.log(`[Socket.IO] User disconnected: ${socket.id}`);
+        logger.info(`User disconnected: ${socket.id}`);
       });
     });
 
     // In production, serve the built SPA files
-    const __dirname = import.meta.dirname;
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
     const distPath = path.join(__dirname, "../spa");
 
     // Serve static files (but not index.html for API routes)
@@ -137,27 +62,26 @@ async function startServer() {
     });
 
     httpServer.listen(port, () => {
-      console.log(`🚀 Fusion Starter server running on port ${port}`);
-      console.log(`📱 Frontend: http://localhost:${port}`);
-      console.log(`🔧 API: http://localhost:${port}/api`);
-      console.log(`🔗 WebSocket: ws://localhost:${port}`);
-      console.log(`✅ Socket.IO initialized`);
+      logger.info(`🚀 Server running on port ${port}`);
+      logger.info(`📱 Frontend: http://localhost:${port}`);
+      logger.info(`🔧 API: http://localhost:${port}/api`);
+      logger.info(`🔗 WebSocket: ws://localhost:${port}`);
     });
 
     // Graceful shutdown
     process.on("SIGTERM", async () => {
-      console.log("🛑 Received SIGTERM, shutting down gracefully");
+      logger.warn("🛑 Received SIGTERM, shutting down gracefully");
       await closeDB();
       process.exit(0);
     });
 
     process.on("SIGINT", async () => {
-      console.log("🛑 Received SIGINT, shutting down gracefully");
+      logger.warn("🛑 Received SIGINT, shutting down gracefully");
       await closeDB();
       process.exit(0);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    logger.error("Failed to start server", error);
     process.exit(1);
   }
 }

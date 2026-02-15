@@ -5,17 +5,6 @@ import { handleDemo } from "./routes/demo";
 import { handleLogin, handleSignup } from "./routes/auth";
 import { addToQueue, getQueuedLines, clearQueuedLine } from "./routes/queued";
 import { addToHistory, getHistory, searchHistory } from "./routes/history";
-import {
-  getOrCreateGroupChat,
-  sendMessage,
-  getMessages,
-  addMemberToGroup,
-  setTyping,
-  getTypingStatus,
-  markMessageAsRead,
-  editMessage,
-  deleteMessage,
-} from "./routes/chat";
 import { createTeamMember, getTeamMembers } from "./routes/members";
 import {
   uploadProfilePicture,
@@ -34,27 +23,52 @@ import { sendAnnouncement, getAnnouncements } from "./routes/announcements";
 import { connectDB } from "./db";
 import { authMiddleware } from "./middleware/auth";
 import { getCollections } from "./db";
+import { validateEnvironment } from "./config";
+import { createLogger } from "./logger";
+
+const logger = createLogger("Server");
 
 export async function createServer() {
+  // Validate environment variables first (fail fast if critical vars are missing)
+  validateEnvironment();
+
   // Initialize MongoDB connection
   try {
     await connectDB();
-    console.log("Database initialized successfully");
+    logger.info("✓ Database initialized successfully");
   } catch (error) {
-    console.error("Failed to initialize database:", error);
+    logger.error("Failed to initialize database", error);
     throw error;
   }
 
   const app = express();
 
-  // Middleware
+  // Middleware - Fixed CORS configuration
+  // Never allow wildcard (*) with credentials: true
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080",
+  ];
+
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+  }
+
   const corsOptions = {
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:8080",
-      process.env.FRONTEND_URL || "*",
-    ],
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -106,17 +120,6 @@ export async function createServer() {
   app.get("/api/history", authMiddleware, getHistory);
   app.get("/api/history/search", authMiddleware, searchHistory);
 
-  // Chat routes (protected)
-  app.get("/api/chat/group", authMiddleware, getOrCreateGroupChat);
-  app.post("/api/chat/send", authMiddleware, sendMessage);
-  app.get("/api/chat/messages", authMiddleware, getMessages);
-  app.post("/api/chat/group/add-member", authMiddleware, addMemberToGroup);
-  app.post("/api/chat/typing", authMiddleware, setTyping);
-  app.get("/api/chat/typing", authMiddleware, getTypingStatus);
-  app.post("/api/chat/mark-read", authMiddleware, markMessageAsRead);
-  app.post("/api/chat/edit", authMiddleware, editMessage);
-  app.post("/api/chat/delete", authMiddleware, deleteMessage);
-
   // Member routes (protected)
   app.get("/api/members", authMiddleware, getTeamMembers);
   app.post("/api/members", authMiddleware, createTeamMember);
@@ -140,13 +143,14 @@ export async function createServer() {
   app.get("/api/announcements", authMiddleware, getAnnouncements);
 
   // Global error handler
-  app.use((err: any, _req: any, res: any, _next: any) => {
-    console.error("[Server] Unhandled error:", err);
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    logger.error("Unhandled error", err);
     res.status(500).json({
       error: "Internal server error",
       message: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   });
 
+  logger.info("✓ Server initialized successfully");
   return app;
 }

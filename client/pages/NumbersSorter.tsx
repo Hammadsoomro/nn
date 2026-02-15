@@ -13,7 +13,11 @@ import { Trash2, Plus, Copy, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
-import { io, Socket } from "socket.io-client";
+import { useSocket } from "@/context/SocketContext";
+import { createLogger } from "@/lib/logger";
+import type { QueuedLine, HistoryEntry } from "@shared/api";
+
+const logger = createLogger("NumbersSorter");
 
 export default function NumbersSorter() {
   const { token, isAdmin } = useAuth();
@@ -27,7 +31,7 @@ export default function NumbersSorter() {
     cooldownMinutes: 30,
   });
   const [savingSettings, setSavingSettings] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  const { socket, isConnected } = useSocket();
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -39,24 +43,14 @@ export default function NumbersSorter() {
       try {
         setDeduplicated(JSON.parse(savedDeduplicated));
       } catch (error) {
-        console.error("Error loading deduplicated lines:", error);
+        logger.error("Error loading deduplicated lines", error);
       }
     }
   }, []);
 
-  // Load settings from server and initialize Socket.IO
+  // Load settings from server and setup listeners
   useEffect(() => {
     if (!token) return;
-
-    const socket = io(window.location.origin, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
-
-    socketRef.current = socket;
 
     const loadSettings = async () => {
       try {
@@ -72,7 +66,7 @@ export default function NumbersSorter() {
           });
         }
       } catch (error) {
-        console.error("[NumbersSorter] Error loading settings:", error);
+        logger.error("Error loading settings", error);
       }
     };
 
@@ -87,7 +81,7 @@ export default function NumbersSorter() {
           setQueuedCount(data.lines?.length || 0);
         }
       } catch (error) {
-        console.error("[NumbersSorter] Error loading queued count:", error);
+        logger.error("Error loading queued count", error);
       }
     };
 
@@ -95,25 +89,26 @@ export default function NumbersSorter() {
     loadQueuedCount();
 
     // Listen for real-time claim settings updates
-    const handleClaimSettingsUpdated = () => {
-      console.log("[NumbersSorter] Claim settings updated, reloading");
-      loadSettings();
-    };
+    if (socket && isConnected) {
+      const handleClaimSettingsUpdated = () => {
+        logger.debug("Claim settings updated, reloading");
+        loadSettings();
+      };
 
-    const handleLinesQueuedUpdated = () => {
-      console.log("[NumbersSorter] Queued list updated, reloading");
-      loadQueuedCount();
-    };
+      const handleLinesQueuedUpdated = () => {
+        logger.debug("Queued list updated, reloading");
+        loadQueuedCount();
+      };
 
-    socket.on("claim-settings-updated", handleClaimSettingsUpdated);
-    socket.on("lines-queued-updated", handleLinesQueuedUpdated);
+      socket.on("claim-settings-updated", handleClaimSettingsUpdated);
+      socket.on("lines-queued-updated", handleLinesQueuedUpdated);
 
-    return () => {
-      socket.off("claim-settings-updated", handleClaimSettingsUpdated);
-      socket.off("lines-queued-updated", handleLinesQueuedUpdated);
-      socket.disconnect();
-    };
-  }, [token]);
+      return () => {
+        socket.off("claim-settings-updated", handleClaimSettingsUpdated);
+        socket.off("lines-queued-updated", handleLinesQueuedUpdated);
+      };
+    }
+  }, [token, socket, isConnected]);
 
   // Save to localStorage when input changes
   useEffect(() => {
@@ -148,7 +143,7 @@ export default function NumbersSorter() {
 
       const queuedData = queuedResponse.ok ? await queuedResponse.json() : {};
       const queuedLines = new Set(
-        (queuedData.lines || []).map((line: any) =>
+        (queuedData.lines || []).map((line: QueuedLine) =>
           line.content.trim().toLowerCase(),
         ),
       );
@@ -162,7 +157,7 @@ export default function NumbersSorter() {
         ? await historyResponse.json()
         : {};
       const historyLines = new Set(
-        (historyData.entries || []).map((entry: any) =>
+        (historyData.entries || []).map((entry: HistoryEntry) =>
           entry.content.trim().toLowerCase(),
         ),
       );
@@ -200,7 +195,7 @@ export default function NumbersSorter() {
         toast.success(`${unique.length} unique lines after deduplication`);
       }
     } catch (error) {
-      console.error("Error deduplicating lines:", error);
+      logger.error("Error deduplicating lines", error);
       toast.error("Failed to deduplicate lines");
     } finally {
       setIsDeduplicating(false);

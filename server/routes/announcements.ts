@@ -1,14 +1,17 @@
 import { Router, Request, Response } from "express";
+import { z } from "zod";
 import { getCollections } from "../db";
 import { getIO } from "../websocket-io";
 import { ObjectId } from "mongodb";
+import { createLogger } from "../logger";
+
+const logger = createLogger("Announcements");
 
 export async function sendAnnouncement(req: Request, res: Response) {
   try {
     const userId = (req as any).userId;
     const teamId = (req as any).teamId;
     const role = (req as any).role;
-    const { text } = req.body;
 
     // Check if user is admin
     if (role !== "admin") {
@@ -17,26 +20,17 @@ export async function sendAnnouncement(req: Request, res: Response) {
         .json({ error: "Only admins can send announcements" });
     }
 
-    // Validate input
-    if (!text || typeof text !== "string") {
-      return res.status(400).json({ error: "Text field is required" });
-    }
+    const schema = z.object({
+      text: z.string().trim().min(1, "Announcement cannot be empty").max(500, "Announcement must be 500 characters or less"),
+    });
 
-    if (text.trim().length === 0) {
-      return res.status(400).json({ error: "Announcement cannot be empty" });
-    }
-
-    if (text.length > 500) {
-      return res
-        .status(400)
-        .json({ error: "Announcement must be 500 characters or less" });
-    }
+    const validated = schema.parse(req.body);
 
     const collections = getCollections();
     const announcement = {
       _id: new ObjectId(),
       teamId,
-      text: text.trim(),
+      text: validated.text,
       sentBy: userId,
       createdAt: new Date(),
     };
@@ -58,7 +52,10 @@ export async function sendAnnouncement(req: Request, res: Response) {
 
     res.json({ success: true, announcement: announcement._id.toString() });
   } catch (error) {
-    console.error("[announcements] Error sending announcement:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    logger.error("Error sending announcement", error);
     res.status(500).json({ error: "Failed to send announcement" });
   }
 }
@@ -76,7 +73,7 @@ export async function getAnnouncements(req: Request, res: Response) {
 
     res.json({ announcements });
   } catch (error) {
-    console.error("[announcements] Error fetching announcements:", error);
+    logger.error("Error fetching announcements", error);
     res.status(500).json({ error: "Failed to fetch announcements" });
   }
 }

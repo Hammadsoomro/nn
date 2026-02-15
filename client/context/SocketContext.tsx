@@ -1,6 +1,15 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("SocketIO");
 
 interface SocketContextType {
   socket: Socket | null;
@@ -24,8 +33,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Create socket connection without auth header (socket.io uses its own auth mechanism)
+    // Create socket connection with authentication
     const newSocket = io(window.location.origin, {
+      auth: { token },
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -34,21 +44,21 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     });
 
     newSocket.on("connect", () => {
-      console.log("[Socket.IO] Connected:", newSocket.id);
+      logger.info(`Connected: ${newSocket.id}`);
       setIsConnected(true);
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("[Socket.IO] Disconnected:", reason);
+      logger.info(`Disconnected: ${reason}`);
       setIsConnected(false);
     });
 
     newSocket.on("connect_error", (error) => {
-      console.error("[Socket.IO] Connection error:", error);
+      logger.error("Connection error", error);
     });
 
     newSocket.on("error", (error) => {
-      console.error("[Socket.IO] Error:", error);
+      logger.error("Error", error);
     });
 
     setSocket(newSocket);
