@@ -168,6 +168,17 @@ export default function NumbersSorter() {
     setDeduplicated([]);
   };
 
+  const copyToClipboard = () => {
+    if (deduplicated.length === 0) return;
+    const text = deduplicated.join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Copied to clipboard!");
+    }).catch((err) => {
+      console.error("Failed to copy:", err);
+      toast.error("Failed to copy to clipboard");
+    });
+  };
+
   const [localSettings, setLocalSettings] = useState({
     lineCount: 5,
     cooldownMinutes: 30,
