@@ -37,12 +37,23 @@ export default function NumbersSorter() {
     }
   }, []);
 
+  const [localSettings, setLocalSettings] = useState({
+    lineCount: 5,
+    cooldownMinutes: 30,
+  });
+
   // Fetch settings
-  const { data: settings = { lineCount: 5, cooldownMinutes: 30 } } = useQuery({
+  const { data: settings } = useQuery({
     queryKey: ["claim-settings"],
     queryFn: () => apiFetch("/api/claim/settings", { token }),
     enabled: !!token,
   });
+
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings(settings);
+    }
+  }, [settings]);
 
   // Fetch queued lines count
   const { data: queuedData } = useQuery({
@@ -178,17 +189,6 @@ export default function NumbersSorter() {
       toast.error("Failed to copy to clipboard");
     });
   };
-
-  const [localSettings, setLocalSettings] = useState({
-    lineCount: 5,
-    cooldownMinutes: 30,
-  });
-
-  useEffect(() => {
-    if (settings) {
-      setLocalSettings(settings);
-    }
-  }, [settings]);
 
   const addToQueue = async () => {
     if (deduplicated.length === 0) {
