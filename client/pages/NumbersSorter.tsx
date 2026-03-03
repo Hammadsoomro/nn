@@ -37,12 +37,23 @@ export default function NumbersSorter() {
     }
   }, []);
 
+  const [localSettings, setLocalSettings] = useState({
+    lineCount: 5,
+    cooldownMinutes: 30,
+  });
+
   // Fetch settings
-  const { data: settings = { lineCount: 5, cooldownMinutes: 30 } } = useQuery({
+  const { data: settings } = useQuery({
     queryKey: ["claim-settings"],
     queryFn: () => apiFetch("/api/claim/settings", { token }),
     enabled: !!token,
   });
+
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings(settings);
+    }
+  }, [settings]);
 
   // Fetch queued lines count
   const { data: queuedData } = useQuery({
@@ -168,16 +179,16 @@ export default function NumbersSorter() {
     setDeduplicated([]);
   };
 
-  const [localSettings, setLocalSettings] = useState({
-    lineCount: 5,
-    cooldownMinutes: 30,
-  });
-
-  useEffect(() => {
-    if (settings) {
-      setLocalSettings(settings);
-    }
-  }, [settings]);
+  const copyToClipboard = () => {
+    if (deduplicated.length === 0) return;
+    const text = deduplicated.join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Copied to clipboard!");
+    }).catch((err) => {
+      console.error("Failed to copy:", err);
+      toast.error("Failed to copy to clipboard");
+    });
+  };
 
   const addToQueue = async () => {
     if (deduplicated.length === 0) {

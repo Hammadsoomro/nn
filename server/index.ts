@@ -57,7 +57,13 @@ export async function createServer() {
 
   app.use(cors(corsOptions));
   // Explicitly handle OPTIONS requests
-  app.options("/*splat", cors(corsOptions));
+  app.options("*", cors(corsOptions));
+
+  // Request logger
+  app.use((req, res, next) => {
+    console.log(`[Server] ${req.method} ${req.path}`);
+    next();
+  });
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
