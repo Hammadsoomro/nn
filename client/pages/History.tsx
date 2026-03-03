@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
+import { apiFetch } from "@/lib/api";
 import { createLogger } from "@/lib/logger";
 import { formatDateTime } from "@/lib/utils";
 import type { HistoryEntry } from "@shared/api";
