@@ -11,7 +11,6 @@ export interface DbCollections {
   chatGroups: Collection;
   claimSettings: Collection;
   claimedNumbers: Collection;
-  announcements: Collection;
 }
 
 let collections: DbCollections | null = null;
@@ -62,10 +61,6 @@ export async function connectDB(): Promise<Db> {
     await claimedCollection.createIndex({ claimedBy: 1 });
     await claimedCollection.createIndex({ claimedAt: -1 });
 
-    const announcementsCollection = db.collection("announcements");
-    await announcementsCollection.createIndex({ teamId: 1 });
-    await announcementsCollection.createIndex({ createdAt: -1 });
-
     collections = {
       users: usersCollection,
       queuedLines: queuedCollection,
@@ -74,7 +69,6 @@ export async function connectDB(): Promise<Db> {
       chatGroups: groupCollection,
       claimSettings: settingsCollection,
       claimedNumbers: claimedCollection,
-      announcements: announcementsCollection,
     };
 
     console.log("MongoDB connected successfully");

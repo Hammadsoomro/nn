@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useChat } from "@/context/ChatContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,16 +21,7 @@ import {
 } from "lucide-react";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { ModernSidebar } from "@/components/ModernSidebar";
-import { AnnouncementSlider } from "@/components/AnnouncementSlider";
 import { io, Socket } from "socket.io-client";
-
-interface Announcement {
-  _id: string;
-  text: string;
-  sentBy: string;
-  teamId: string;
-  createdAt: string;
-}
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -47,8 +37,6 @@ export const Layout = ({ children }: LayoutProps) => {
     }
     return false;
   });
-  const [currentAnnouncement, setCurrentAnnouncement] =
-    useState<Announcement | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   const toggleCollapse = () => {
@@ -57,26 +45,8 @@ export const Layout = ({ children }: LayoutProps) => {
     localStorage.setItem("sidebarCollapsed", String(newValue));
   };
 
-  // Initialize WebSocket for announcements
+  // Initialize WebSocket
   useEffect(() => {
-    // Add Montag in-page ads scripts
-    const script1 = document.createElement("script");
-    script1.dataset.zone = "10675533";
-    script1.src = "https://nap5k.com/tag.min.js";
-
-    const script2 = document.createElement("script");
-    script2.dataset.zone = "10675538";
-    script2.src = "https://al5sm.com/tag.min.js";
-
-    const container = [document.documentElement, document.body]
-      .filter(Boolean)
-      .pop();
-
-    if (container) {
-      container.appendChild(script1);
-      container.appendChild(script2);
-    }
-
     if (!token) return;
 
     const socket = io(window.location.origin, {
@@ -89,36 +59,15 @@ export const Layout = ({ children }: LayoutProps) => {
 
     socketRef.current = socket;
 
-    // Listen for announcements
-    const handleAnnouncementReceived = (data: Announcement) => {
-      console.log("[Layout] Announcement received:", data);
-      setCurrentAnnouncement(data);
-    };
-
-    socket.on("announcement-received", handleAnnouncementReceived);
-
     return () => {
-      if (container) {
-        if (script1.parentNode === container) container.removeChild(script1);
-        if (script2.parentNode === container) container.removeChild(script2);
-      }
-      socket.off("announcement-received", handleAnnouncementReceived);
       socket.disconnect();
     };
   }, [token]);
 
   return (
     <>
-      {/* Announcement Slider */}
-      {currentAnnouncement && (
-        <AnnouncementSlider
-          announcement={currentAnnouncement}
-          onDismiss={() => setCurrentAnnouncement(null)}
-        />
-      )}
-
       <div
-        className={`flex h-screen bg-transparent transition-all duration-300 ${currentAnnouncement ? "pt-20" : ""}`}
+        className={`flex h-screen bg-transparent transition-all duration-300`}
       >
         {/* Modern Sidebar */}
         <ModernSidebar

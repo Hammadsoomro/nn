@@ -8,7 +8,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
-import { ChatProvider } from "@/context/ChatContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -21,7 +20,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NumbersSorter = lazy(() => import("./pages/NumbersSorter"));
 const NumbersInbox = lazy(() => import("./pages/NumbersInbox"));
 const QueuedList = lazy(() => import("./pages/QueuedList"));
-const TeamChat = lazy(() => import("./pages/TeamChat"));
 const History = lazy(() => import("./pages/History"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -43,8 +41,7 @@ const App = () => (
       <ThemeProvider>
         <AuthProvider>
           <SocketProvider>
-            <ChatProvider>
-              <ErrorBoundary>
+            <ErrorBoundary>
                 <BrowserRouter>
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
@@ -90,16 +87,6 @@ const App = () => (
                         }
                       />
 
-                      {/* Team Routes */}
-                      <Route
-                        path="/chat"
-                        element={
-                          <ProtectedRoute>
-                            <TeamChat />
-                          </ProtectedRoute>
-                        }
-                      />
-
                       <Route
                         path="/history"
                         element={
@@ -128,7 +115,6 @@ const App = () => (
                   </Suspense>
                 </BrowserRouter>
               </ErrorBoundary>
-            </ChatProvider>
           </SocketProvider>
         </AuthProvider>
       </ThemeProvider>

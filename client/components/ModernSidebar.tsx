@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useChat } from "@/context/ChatContext";
 import { formatTime, formatDateOnly } from "@/lib/utils";
 import {
   Home,
@@ -29,7 +28,6 @@ export const ModernSidebar = ({
   onCollapsedChange,
 }: ModernSidebarProps) => {
   const { user, logout, isAdmin } = useAuth();
-  const { unreadCounts } = useChat();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -38,16 +36,10 @@ export const ModernSidebar = ({
     return () => clearInterval(timer);
   }, []);
 
-  const totalUnread = Array.from(unreadCounts.values()).reduce(
-    (sum, count) => sum + count,
-    0,
-  );
-
   const isActive = (path: string) => location.pathname === path;
 
   const menuItems = [
     { label: "Dashboard", icon: Home, path: "/dashboard" },
-    { label: "Team Chat", icon: MessageSquare, path: "/chat" },
     { label: "Numbers Inbox", icon: Clock, path: "/inbox" },
     { label: "History", icon: Clock, path: "/history" },
     ...(isAdmin
@@ -165,8 +157,6 @@ export const ModernSidebar = ({
           >
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isTeamChat = item.path === "/chat";
-              const hasUnread = isTeamChat && totalUnread > 0;
 
               return (
                 <Link
@@ -185,16 +175,6 @@ export const ModernSidebar = ({
                     <span className="text-sm font-medium whitespace-nowrap">
                       {item.label}
                     </span>
-                  )}
-
-                  {/* Unread Badge */}
-                  {hasUnread && !isCollapsed && (
-                    <span className="ml-auto text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
-                      {totalUnread > 99 ? "99+" : totalUnread}
-                    </span>
-                  )}
-                  {hasUnread && isCollapsed && (
-                    <div className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
                   )}
 
                   {/* Collapsed Tooltip */}

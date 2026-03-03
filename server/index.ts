@@ -5,17 +5,6 @@ import { handleDemo } from "./routes/demo";
 import { handleLogin, handleSignup } from "./routes/auth";
 import { addToQueue, getQueuedLines, clearQueuedLine } from "./routes/queued";
 import { addToHistory, getHistory, searchHistory } from "./routes/history";
-import {
-  getOrCreateGroupChat,
-  sendMessage,
-  getMessages,
-  addMemberToGroup,
-  setTyping,
-  getTypingStatus,
-  markMessageAsRead,
-  editMessage,
-  deleteMessage,
-} from "./routes/chat";
 import { createTeamMember, getTeamMembers } from "./routes/members";
 import {
   uploadProfilePicture,
@@ -30,7 +19,6 @@ import {
   getClaimedNumbers,
   releaseClaimedNumbers,
 } from "./routes/claim";
-import { sendAnnouncement, getAnnouncements } from "./routes/announcements";
 import { connectDB } from "./db";
 import { authMiddleware } from "./middleware/auth";
 import { getCollections } from "./db";
@@ -69,7 +57,7 @@ export async function createServer() {
 
   app.use(cors(corsOptions));
   // Explicitly handle OPTIONS requests
-  app.options("*", cors(corsOptions));
+  app.options("/*splat", cors(corsOptions));
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -89,58 +77,43 @@ export async function createServer() {
   });
 
   // Example API routes
-  // app.get("/api/ping", (_req, res) => {
-  //   const ping = process.env.PING_MESSAGE ?? "ping";
-  //   res.json({ message: ping });
-  // });
+  app.get("/api/ping", (_req, res) => {
+    const ping = process.env.PING_MESSAGE ?? "ping";
+    res.json({ message: ping });
+  });
 
-  // app.get("/api/demo", handleDemo);
+  app.get("/api/demo", handleDemo);
 
   // Authentication routes
-  // app.post("/api/auth/login", handleLogin);
-  // app.post("/api/auth/signup", handleSignup);
+  app.post("/api/auth/login", handleLogin);
+  app.post("/api/auth/signup", handleSignup);
 
   // Queued list routes (protected)
-  // app.post("/api/queued/add", authMiddleware, addToQueue);
-  // app.get("/api/queued", authMiddleware, getQueuedLines);
-  // // app.delete("/api/queued/:lineId", authMiddleware, clearQueuedLine);
+  app.post("/api/queued/add", authMiddleware, addToQueue);
+  app.get("/api/queued", authMiddleware, getQueuedLines);
+  app.delete("/api/queued/:lineId", authMiddleware, clearQueuedLine);
 
   // History routes (protected)
-  // app.post("/api/history/add", authMiddleware, addToHistory);
-  // app.get("/api/history", authMiddleware, getHistory);
-  // app.get("/api/history/search", authMiddleware, searchHistory);
-
-  // Chat routes (protected)
-  // app.get("/api/chat/group", authMiddleware, getOrCreateGroupChat);
-  // app.post("/api/chat/send", authMiddleware, sendMessage);
-  // app.get("/api/chat/messages", authMiddleware, getMessages);
-  // app.post("/api/chat/group/add-member", authMiddleware, addMemberToGroup);
-  // app.post("/api/chat/typing", authMiddleware, setTyping);
-  // app.get("/api/chat/typing", authMiddleware, getTypingStatus);
-  // app.post("/api/chat/mark-read", authMiddleware, markMessageAsRead);
-  // app.post("/api/chat/edit", authMiddleware, editMessage);
-  // app.post("/api/chat/delete", authMiddleware, deleteMessage);
+  app.post("/api/history/add", authMiddleware, addToHistory);
+  app.get("/api/history", authMiddleware, getHistory);
+  app.get("/api/history/search", authMiddleware, searchHistory);
 
   // Member routes (protected)
-  // app.get("/api/members", authMiddleware, getTeamMembers);
-  // app.post("/api/members", authMiddleware, createTeamMember);
+  app.get("/api/members", authMiddleware, getTeamMembers);
+  app.post("/api/members", authMiddleware, createTeamMember);
 
   // Profile routes (protected)
-  // app.get("/api/profile", authMiddleware, getProfile);
-  // app.post("/api/profile/upload-picture", authMiddleware, uploadProfilePicture);
-  // app.post("/api/profile/update-name", authMiddleware, updateName);
-  // app.post("/api/profile/change-password", authMiddleware, changePassword);
+  app.get("/api/profile", authMiddleware, getProfile);
+  app.post("/api/profile/upload-picture", authMiddleware, uploadProfilePicture);
+  app.post("/api/profile/update-name", authMiddleware, updateName);
+  app.post("/api/profile/change-password", authMiddleware, changePassword);
 
   // Claim routes (protected)
-  // app.get("/api/claim/settings", authMiddleware, getClaimSettings);
-  // app.put("/api/claim/settings", authMiddleware, updateClaimSettings);
-  // app.post("/api/claim", authMiddleware, claimNumbers);
-  // app.get("/api/claim/numbers", authMiddleware, getClaimedNumbers);
-  // app.post("/api/claim/release", authMiddleware, releaseClaimedNumbers);
-
-  // Announcements routes (protected)
-  // app.post("/api/announcements/send", authMiddleware, sendAnnouncement);
-  // app.get("/api/announcements", authMiddleware, getAnnouncements);
+  app.get("/api/claim/settings", authMiddleware, getClaimSettings);
+  app.put("/api/claim/settings", authMiddleware, updateClaimSettings);
+  app.post("/api/claim", authMiddleware, claimNumbers);
+  app.get("/api/claim/numbers", authMiddleware, getClaimedNumbers);
+  app.post("/api/claim/release", authMiddleware, releaseClaimedNumbers);
 
   // Global error handler
   app.use((err: any, _req: any, res: any, _next: any) => {
