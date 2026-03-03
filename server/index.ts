@@ -55,6 +55,11 @@ export async function createServer() {
     allowedOrigins.push(process.env.FRONTEND_URL);
   }
 
+  // Add the Netlify site URL if available
+  if (process.env.URL) {
+    allowedOrigins.push(process.env.URL);
+  }
+
   const corsOptions = {
     origin: (
       origin: string | undefined,
@@ -143,13 +148,21 @@ export async function createServer() {
   app.get("/api/announcements", authMiddleware, getAnnouncements);
 
   // Global error handler
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    logger.error("Unhandled error", err);
-    res.status(500).json({
-      error: "Internal server error",
-      message: process.env.NODE_ENV === "development" ? err.message : undefined,
-    });
-  });
+  app.use(
+    (
+      err: Error,
+      _req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction,
+    ) => {
+      logger.error("Unhandled error", err);
+      res.status(500).json({
+        error: "Internal server error",
+        message:
+          process.env.NODE_ENV === "development" ? err.message : undefined,
+      });
+    },
+  );
 
   logger.info("✓ Server initialized successfully");
   return app;

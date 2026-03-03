@@ -59,4 +59,5 @@ const createLogger = (namespace: string): Logger => ({
   },
 });
 
-export { createLogger, Logger };
+export { createLogger };
+export type { Logger };

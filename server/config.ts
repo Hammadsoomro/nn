@@ -53,17 +53,17 @@ export const validateEnvironment = (): ServerConfig => {
   if (errors.length > 0) {
     const errorMessage = [
       "",
-      "❌ ENVIRONMENT CONFIGURATION ERROR",
-      "=" * 50,
-      ...errors.map((e) => `  • ${e}`),
-      "=" * 50,
+      "ENVIRONMENT CONFIGURATION ERROR",
+      "=".repeat(50),
+      ...errors.map((e) => `  - ${e}`),
+      "=".repeat(50),
       "",
       "Please set the missing environment variables and restart the server.",
       "",
     ].join("\n");
 
     logger.error(errorMessage);
-    process.exit(1);
+    throw new Error(errorMessage);
   }
 
   const config: ServerConfig = {
