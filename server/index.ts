@@ -36,32 +36,46 @@ import { authMiddleware } from "./middleware/auth";
 import { getCollections } from "./db";
 
 export async function createServer() {
+  console.log("[Server] Starting server initialization...");
   // Initialize MongoDB connection
   try {
     await connectDB();
-    console.log("Database initialized successfully");
+    console.log("[Server] Database initialized successfully");
   } catch (error) {
-    console.error("Failed to initialize database:", error);
-    throw error;
+    console.error("[Server] Failed to initialize database:", error);
+    // Continue even if database fails, but endpoints will return 500
   }
 
   const app = express();
-  const apiRouter = express.Router();
 
   // Middleware
   const corsOptions: CorsOptions = {
-    origin: true, // Reflect the request origin back to the client
+    origin: (origin, callback) => {
+      // In a serverless environment or local dev, reflect the origin back
+      // If no origin (same-site or non-browser), allow it.
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      // For cross-site, reflect the origin
+      callback(null, true);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   };
 
   app.use(cors(corsOptions));
+  // Explicitly handle OPTIONS requests
+  app.options("*", cors(corsOptions));
+
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
   // Health check endpoint (no auth required)
-  apiRouter.get("/health", (_req, res) => {
+  app.get("/api/health", (_req, res) => {
     try {
       const collections = getCollections();
       res.json({ status: "ok", database: "connected" });
@@ -75,65 +89,58 @@ export async function createServer() {
   });
 
   // Example API routes
-  apiRouter.get("/ping", (_req, res) => {
-    const ping = process.env.PING_MESSAGE ?? "ping";
-    res.json({ message: ping });
-  });
+  // app.get("/api/ping", (_req, res) => {
+  //   const ping = process.env.PING_MESSAGE ?? "ping";
+  //   res.json({ message: ping });
+  // });
 
-  apiRouter.get("/demo", handleDemo);
+  // app.get("/api/demo", handleDemo);
 
   // Authentication routes
-  apiRouter.post("/auth/login", handleLogin);
-  apiRouter.post("/auth/signup", handleSignup);
+  // app.post("/api/auth/login", handleLogin);
+  // app.post("/api/auth/signup", handleSignup);
 
   // Queued list routes (protected)
-  apiRouter.post("/queued/add", authMiddleware, addToQueue);
-  apiRouter.get("/queued", authMiddleware, getQueuedLines);
-  apiRouter.delete("/queued/:lineId", authMiddleware, clearQueuedLine);
+  // app.post("/api/queued/add", authMiddleware, addToQueue);
+  // app.get("/api/queued", authMiddleware, getQueuedLines);
+  // // app.delete("/api/queued/:lineId", authMiddleware, clearQueuedLine);
 
   // History routes (protected)
-  apiRouter.post("/history/add", authMiddleware, addToHistory);
-  apiRouter.get("/history", authMiddleware, getHistory);
-  apiRouter.get("/history/search", authMiddleware, searchHistory);
+  // app.post("/api/history/add", authMiddleware, addToHistory);
+  // app.get("/api/history", authMiddleware, getHistory);
+  // app.get("/api/history/search", authMiddleware, searchHistory);
 
   // Chat routes (protected)
-  apiRouter.get("/chat/group", authMiddleware, getOrCreateGroupChat);
-  apiRouter.post("/chat/send", authMiddleware, sendMessage);
-  apiRouter.get("/chat/messages", authMiddleware, getMessages);
-  apiRouter.post("/chat/group/add-member", authMiddleware, addMemberToGroup);
-  apiRouter.post("/chat/typing", authMiddleware, setTyping);
-  apiRouter.get("/chat/typing", authMiddleware, getTypingStatus);
-  apiRouter.post("/chat/mark-read", authMiddleware, markMessageAsRead);
-  apiRouter.post("/chat/edit", authMiddleware, editMessage);
-  apiRouter.post("/chat/delete", authMiddleware, deleteMessage);
+  // app.get("/api/chat/group", authMiddleware, getOrCreateGroupChat);
+  // app.post("/api/chat/send", authMiddleware, sendMessage);
+  // app.get("/api/chat/messages", authMiddleware, getMessages);
+  // app.post("/api/chat/group/add-member", authMiddleware, addMemberToGroup);
+  // app.post("/api/chat/typing", authMiddleware, setTyping);
+  // app.get("/api/chat/typing", authMiddleware, getTypingStatus);
+  // app.post("/api/chat/mark-read", authMiddleware, markMessageAsRead);
+  // app.post("/api/chat/edit", authMiddleware, editMessage);
+  // app.post("/api/chat/delete", authMiddleware, deleteMessage);
 
   // Member routes (protected)
-  apiRouter.get("/members", authMiddleware, getTeamMembers);
-  apiRouter.post("/members", authMiddleware, createTeamMember);
+  // app.get("/api/members", authMiddleware, getTeamMembers);
+  // app.post("/api/members", authMiddleware, createTeamMember);
 
   // Profile routes (protected)
-  apiRouter.get("/profile", authMiddleware, getProfile);
-  apiRouter.post("/profile/upload-picture", authMiddleware, uploadProfilePicture);
-  apiRouter.post("/profile/update-name", authMiddleware, updateName);
-  apiRouter.post("/profile/change-password", authMiddleware, changePassword);
+  // app.get("/api/profile", authMiddleware, getProfile);
+  // app.post("/api/profile/upload-picture", authMiddleware, uploadProfilePicture);
+  // app.post("/api/profile/update-name", authMiddleware, updateName);
+  // app.post("/api/profile/change-password", authMiddleware, changePassword);
 
   // Claim routes (protected)
-  const claimRouter = express.Router();
-  claimRouter.use(authMiddleware);
-  claimRouter.get("/settings", getClaimSettings);
-  claimRouter.put("/settings", updateClaimSettings);
-  claimRouter.post("/", claimNumbers);
-  claimRouter.get("/numbers", getClaimedNumbers);
-  claimRouter.post("/release", releaseClaimedNumbers);
-  apiRouter.use("/claim", claimRouter);
+  // app.get("/api/claim/settings", authMiddleware, getClaimSettings);
+  // app.put("/api/claim/settings", authMiddleware, updateClaimSettings);
+  // app.post("/api/claim", authMiddleware, claimNumbers);
+  // app.get("/api/claim/numbers", authMiddleware, getClaimedNumbers);
+  // app.post("/api/claim/release", authMiddleware, releaseClaimedNumbers);
 
   // Announcements routes (protected)
-  apiRouter.post("/announcements/send", authMiddleware, sendAnnouncement);
-  apiRouter.get("/announcements", authMiddleware, getAnnouncements);
-
-  // Mount the router under both /api and / to be flexible
-  app.use("/api", apiRouter);
-  app.use("/", apiRouter);
+  // app.post("/api/announcements/send", authMiddleware, sendAnnouncement);
+  // app.get("/api/announcements", authMiddleware, getAnnouncements);
 
   // Global error handler
   app.use((err: any, _req: any, res: any, _next: any) => {
