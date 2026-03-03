@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,24 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.dataset.zone = "10675508";
+    script.src = "https://gizokraijaw.net/vignette.min.js";
+    const container = [document.documentElement, document.body]
+      .filter(Boolean)
+      .pop();
+    if (container) {
+      container.appendChild(script);
+    }
+
+    return () => {
+      if (container && script.parentNode === container) {
+        container.removeChild(script);
+      }
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
