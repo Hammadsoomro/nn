@@ -1,12 +1,26 @@
 import serverless from "serverless-http";
 import { createServer } from "../../server";
 
-let app: any;
+let cachedHandler: any;
 
 export const handler = async (event: any, context: any) => {
-  if (!app) {
-    app = await createServer();
+  context.callbackWaitsForEmptyEventLoop = false;
+
+  // Ensure the database is connected
+  if (!cachedHandler) {
+    try {
+      const app = await createServer();
+      cachedHandler = serverless(app, {
+        binary: ["image/*", "font/*", "application/octet-stream"],
+      });
+    } catch (error) {
+      console.error("Failed to initialize serverless handler:", error);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Internal Server Error", message: String(error) }),
+      };
+    }
   }
-  const handlerFunc = serverless(app);
-  return handlerFunc(event, context);
+
+  return cachedHandler(event, context);
 };

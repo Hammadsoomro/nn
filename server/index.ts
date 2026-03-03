@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import { handleDemo } from "./routes/demo";
 import { handleLogin, handleSignup } from "./routes/auth";
 import { addToQueue, getQueuedLines, clearQueuedLine } from "./routes/queued";
@@ -46,15 +46,11 @@ export async function createServer() {
   }
 
   const app = express();
+  const apiRouter = express.Router();
 
   // Middleware
-  const corsOptions = {
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:8080",
-      process.env.FRONTEND_URL || "*",
-    ],
+  const corsOptions: CorsOptions = {
+    origin: true, // Reflect the request origin back to the client
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -64,14 +60,8 @@ export async function createServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-  // Middleware to populate teamId and role from database (after auth middleware)
-  app.use((req, res, next) => {
-    // This will be set by authMiddleware, we just ensure it's available
-    next();
-  });
-
   // Health check endpoint (no auth required)
-  app.get("/api/health", (_req, res) => {
+  apiRouter.get("/health", (_req, res) => {
     try {
       const collections = getCollections();
       res.json({ status: "ok", database: "connected" });
@@ -85,59 +75,65 @@ export async function createServer() {
   });
 
   // Example API routes
-  app.get("/api/ping", (_req, res) => {
+  apiRouter.get("/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
   });
 
-  app.get("/api/demo", handleDemo);
+  apiRouter.get("/demo", handleDemo);
 
   // Authentication routes
-  app.post("/api/auth/login", handleLogin);
-  app.post("/api/auth/signup", handleSignup);
+  apiRouter.post("/auth/login", handleLogin);
+  apiRouter.post("/auth/signup", handleSignup);
 
   // Queued list routes (protected)
-  app.post("/api/queued/add", authMiddleware, addToQueue);
-  app.get("/api/queued", authMiddleware, getQueuedLines);
-  app.delete("/api/queued/:lineId", authMiddleware, clearQueuedLine);
+  apiRouter.post("/queued/add", authMiddleware, addToQueue);
+  apiRouter.get("/queued", authMiddleware, getQueuedLines);
+  apiRouter.delete("/queued/:lineId", authMiddleware, clearQueuedLine);
 
   // History routes (protected)
-  app.post("/api/history/add", authMiddleware, addToHistory);
-  app.get("/api/history", authMiddleware, getHistory);
-  app.get("/api/history/search", authMiddleware, searchHistory);
+  apiRouter.post("/history/add", authMiddleware, addToHistory);
+  apiRouter.get("/history", authMiddleware, getHistory);
+  apiRouter.get("/history/search", authMiddleware, searchHistory);
 
   // Chat routes (protected)
-  app.get("/api/chat/group", authMiddleware, getOrCreateGroupChat);
-  app.post("/api/chat/send", authMiddleware, sendMessage);
-  app.get("/api/chat/messages", authMiddleware, getMessages);
-  app.post("/api/chat/group/add-member", authMiddleware, addMemberToGroup);
-  app.post("/api/chat/typing", authMiddleware, setTyping);
-  app.get("/api/chat/typing", authMiddleware, getTypingStatus);
-  app.post("/api/chat/mark-read", authMiddleware, markMessageAsRead);
-  app.post("/api/chat/edit", authMiddleware, editMessage);
-  app.post("/api/chat/delete", authMiddleware, deleteMessage);
+  apiRouter.get("/chat/group", authMiddleware, getOrCreateGroupChat);
+  apiRouter.post("/chat/send", authMiddleware, sendMessage);
+  apiRouter.get("/chat/messages", authMiddleware, getMessages);
+  apiRouter.post("/chat/group/add-member", authMiddleware, addMemberToGroup);
+  apiRouter.post("/chat/typing", authMiddleware, setTyping);
+  apiRouter.get("/chat/typing", authMiddleware, getTypingStatus);
+  apiRouter.post("/chat/mark-read", authMiddleware, markMessageAsRead);
+  apiRouter.post("/chat/edit", authMiddleware, editMessage);
+  apiRouter.post("/chat/delete", authMiddleware, deleteMessage);
 
   // Member routes (protected)
-  app.get("/api/members", authMiddleware, getTeamMembers);
-  app.post("/api/members", authMiddleware, createTeamMember);
+  apiRouter.get("/members", authMiddleware, getTeamMembers);
+  apiRouter.post("/members", authMiddleware, createTeamMember);
 
   // Profile routes (protected)
-  app.get("/api/profile", authMiddleware, getProfile);
-  app.post("/api/profile/upload-picture", authMiddleware, uploadProfilePicture);
-  app.post("/api/profile/update-name", authMiddleware, updateName);
-  app.post("/api/profile/change-password", authMiddleware, changePassword);
+  apiRouter.get("/profile", authMiddleware, getProfile);
+  apiRouter.post("/profile/upload-picture", authMiddleware, uploadProfilePicture);
+  apiRouter.post("/profile/update-name", authMiddleware, updateName);
+  apiRouter.post("/profile/change-password", authMiddleware, changePassword);
 
   // Claim routes (protected)
-  app.use("/api/claim", authMiddleware);
-  app.get("/api/claim/settings", getClaimSettings);
-  app.put("/api/claim/settings", updateClaimSettings);
-  app.post("/api/claim", claimNumbers);
-  app.get("/api/claim/numbers", getClaimedNumbers);
-  app.post("/api/claim/release", releaseClaimedNumbers);
+  const claimRouter = express.Router();
+  claimRouter.use(authMiddleware);
+  claimRouter.get("/settings", getClaimSettings);
+  claimRouter.put("/settings", updateClaimSettings);
+  claimRouter.post("/", claimNumbers);
+  claimRouter.get("/numbers", getClaimedNumbers);
+  claimRouter.post("/release", releaseClaimedNumbers);
+  apiRouter.use("/claim", claimRouter);
 
   // Announcements routes (protected)
-  app.post("/api/announcements/send", authMiddleware, sendAnnouncement);
-  app.get("/api/announcements", authMiddleware, getAnnouncements);
+  apiRouter.post("/announcements/send", authMiddleware, sendAnnouncement);
+  apiRouter.get("/announcements", authMiddleware, getAnnouncements);
+
+  // Mount the router under both /api and / to be flexible
+  app.use("/api", apiRouter);
+  app.use("/", apiRouter);
 
   // Global error handler
   app.use((err: any, _req: any, res: any, _next: any) => {
