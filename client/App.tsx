@@ -12,18 +12,28 @@ import { ChatProvider } from "@/context/ChatContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-import NumbersSorter from "./pages/NumbersSorter";
-import NumbersInbox from "./pages/NumbersInbox";
-import QueuedList from "./pages/QueuedList";
-import TeamChat from "./pages/TeamChat";
-import History from "./pages/History";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
+import { lazy, Suspense } from "react";
+
+// Lazy load components for performance
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const NumbersSorter = lazy(() => import("./pages/NumbersSorter"));
+const NumbersInbox = lazy(() => import("./pages/NumbersInbox"));
+const QueuedList = lazy(() => import("./pages/QueuedList"));
+const TeamChat = lazy(() => import("./pages/TeamChat"));
+const History = lazy(() => import("./pages/History"));
+const Settings = lazy(() => import("./pages/Settings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+// Loading component for Suspense
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -35,86 +45,88 @@ const App = () => (
           <SocketProvider>
             <ChatProvider>
               <ErrorBoundary>
-              <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
+                <BrowserRouter>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/signup" element={<Signup />} />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
+                      {/* Protected Routes */}
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <ProtectedRoute>
+                            <Dashboard />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                {/* Admin Only Routes */}
-                <Route
-                  path="/sorter"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <NumbersSorter />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/queued"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <QueuedList />
-                    </ProtectedRoute>
-                  }
-                />
+                      {/* Admin Only Routes */}
+                      <Route
+                        path="/sorter"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <NumbersSorter />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/queued"
+                        element={
+                          <ProtectedRoute adminOnly>
+                            <QueuedList />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                {/* Member Routes */}
-                <Route
-                  path="/inbox"
-                  element={
-                    <ProtectedRoute>
-                      <NumbersInbox />
-                    </ProtectedRoute>
-                  }
-                />
+                      {/* Member Routes */}
+                      <Route
+                        path="/inbox"
+                        element={
+                          <ProtectedRoute>
+                            <NumbersInbox />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                {/* Team Routes */}
-                <Route
-                  path="/chat"
-                  element={
-                    <ProtectedRoute>
-                      <TeamChat />
-                    </ProtectedRoute>
-                  }
-                />
+                      {/* Team Routes */}
+                      <Route
+                        path="/chat"
+                        element={
+                          <ProtectedRoute>
+                            <TeamChat />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                <Route
-                  path="/history"
-                  element={
-                    <ProtectedRoute>
-                      <History />
-                    </ProtectedRoute>
-                  }
-                />
+                      <Route
+                        path="/history"
+                        element={
+                          <ProtectedRoute>
+                            <History />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  }
-                />
+                      <Route
+                        path="/settings"
+                        element={
+                          <ProtectedRoute>
+                            <Settings />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                {/* Catch All */}
-                <Route
-                  path="/"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              </BrowserRouter>
+                      {/* Catch All */}
+                      <Route
+                        path="/"
+                        element={<Navigate to="/dashboard" replace />}
+                      />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </BrowserRouter>
               </ErrorBoundary>
             </ChatProvider>
           </SocketProvider>

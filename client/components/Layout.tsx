@@ -59,6 +59,24 @@ export const Layout = ({ children }: LayoutProps) => {
 
   // Initialize WebSocket for announcements
   useEffect(() => {
+    // Add Montag in-page ads scripts
+    const script1 = document.createElement("script");
+    script1.dataset.zone = "10675533";
+    script1.src = "https://nap5k.com/tag.min.js";
+
+    const script2 = document.createElement("script");
+    script2.dataset.zone = "10675538";
+    script2.src = "https://al5sm.com/tag.min.js";
+
+    const container = [document.documentElement, document.body]
+      .filter(Boolean)
+      .pop();
+
+    if (container) {
+      container.appendChild(script1);
+      container.appendChild(script2);
+    }
+
     if (!token) return;
 
     const socket = io(window.location.origin, {
@@ -80,6 +98,10 @@ export const Layout = ({ children }: LayoutProps) => {
     socket.on("announcement-received", handleAnnouncementReceived);
 
     return () => {
+      if (container) {
+        if (script1.parentNode === container) container.removeChild(script1);
+        if (script2.parentNode === container) container.removeChild(script2);
+      }
       socket.off("announcement-received", handleAnnouncementReceived);
       socket.disconnect();
     };
