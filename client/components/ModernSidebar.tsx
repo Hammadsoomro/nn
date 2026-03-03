@@ -49,7 +49,6 @@ export const ModernSidebar = ({
 
   const menuItems = [
     { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-    { label: "Conversations", icon: MessageSquare, path: "/chat" },
     { label: "Messaging Insights", icon: BarChart3, path: "/insights" },
     { label: "Bought Numbers", icon: Hash, path: "/history" },
     { label: "Buy Numbers", icon: ShoppingCart, path: "/sorter" },
@@ -96,8 +95,6 @@ export const ModernSidebar = ({
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isChat = item.path === "/chat";
-            const hasUnread = isChat && totalUnread > 0;
 
             return (
               <Link
@@ -113,11 +110,6 @@ export const ModernSidebar = ({
                 <Icon className="h-5 w-5 flex-shrink-0" />
                 {!isCollapsed && (
                   <span className="text-sm font-medium">{item.label}</span>
-                )}
-                {hasUnread && !isCollapsed && (
-                  <span className="ml-auto bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full">
-                    {totalUnread}
-                  </span>
                 )}
               </Link>
             );
