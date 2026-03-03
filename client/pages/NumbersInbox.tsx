@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock } from "lucide-react";
+import { Clock, Hash, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -21,21 +21,18 @@ export default function NumbersInbox() {
   const queryClient = useQueryClient();
   const [cooldownTimer, setCooldownTimer] = useState<string>("");
 
-  // Fetch claim settings
   const { data: settings = { lineCount: 5, cooldownMinutes: 30 } } = useQuery({
     queryKey: ["claim-settings"],
     queryFn: () => apiFetch("/api/claim/settings", { token }),
     enabled: !!token,
   });
 
-  // Fetch claimed numbers
   const { data: claimedNumbers = [], isLoading: loadingClaims } = useQuery<ClaimedNumber[]>({
     queryKey: ["claimed-numbers"],
     queryFn: () => apiFetch("/api/claim/numbers", { token }),
     enabled: !!token,
   });
 
-  // Fetch queued lines count
   const { data: queuedData } = useQuery({
     queryKey: ["queued"],
     queryFn: () => apiFetch("/api/queued", { token }),
@@ -44,22 +41,18 @@ export default function NumbersInbox() {
 
   const queuedLinesAvailable = (queuedData?.lines?.length || 0) > 0;
 
-  // Check if can claim
   const canClaim = !claimedNumbers.some((num: ClaimedNumber) => {
     return new Date(num.cooldownUntil) > new Date();
   });
 
-  // Mutations
   const claimMutation = useMutation({
     mutationFn: async () => {
-      // Release previous claims if any
       if (claimedNumbers.length > 0) {
         await apiFetch("/api/claim/release", {
           method: "POST",
           token,
         });
       }
-      // Claim new numbers
       return apiFetch("/api/claim", {
         method: "POST",
         token,
@@ -75,7 +68,6 @@ export default function NumbersInbox() {
     }
   });
 
-  // Update cooldown timer
   useEffect(() => {
     const interval = setInterval(() => {
       if (claimedNumbers.length === 0) {
@@ -106,183 +98,130 @@ export default function NumbersInbox() {
     claimMutation.mutate();
   };
 
-  const formatCooldownDuration = (minutes: number) => {
-    if (minutes < 1) {
-      return `${Math.round(minutes * 60)} seconds`;
-    } else if (minutes < 60) {
-      return `${Math.round(minutes)} minute${Math.round(minutes) !== 1 ? "s" : ""}`;
-    } else {
-      const hours = Math.round(minutes / 60);
-      return `${hours} hour${hours !== 1 ? "s" : ""}`;
-    }
-  };
-
-  const totalClaimed = claimedNumbers.length;
-
   return (
     <Layout>
-      <div className="min-h-screen p-6 md:p-8 bg-transparent">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <Clock className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">
-                Numbers Inbox
-              </h1>
-            </div>
-            <p className="text-muted-foreground">
-              Claim {settings.lineCount} numbers at a time with{" "}
-              {formatCooldownDuration(settings.cooldownMinutes)} cooldown
-            </p>
-          </div>
+      <div className="p-6 md:p-10 max-w-[1200px] mx-auto space-y-8">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Numbers Inbox
+          </h1>
+          <p className="text-muted-foreground font-medium">
+            Claim available numbers and manage your workload.
+          </p>
+        </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="p-6">
-              <div className="text-sm text-muted-foreground mb-1">
-                Total Claimed
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="border-border/40 shadow-sm">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Hash className="h-6 w-6 text-primary" />
               </div>
-              <div className="text-3xl font-bold text-foreground">
-                {totalClaimed}
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Claimed</p>
+                <p className="text-2xl font-extrabold text-foreground">{claimedNumbers.length}</p>
               </div>
-            </Card>
-            <Card className="p-6">
-              <div className="text-sm text-muted-foreground mb-1">Status</div>
-              <div
-                className={`text-3xl font-bold ${canClaim ? "text-green-600" : "text-red-600"}`}
-              >
-                {canClaim ? "Ready" : "Cooldown"}
-              </div>
-            </Card>
-            <Card className="p-6">
-              <div className="text-sm text-muted-foreground mb-1">
-                Claim Settings
-              </div>
-              <div className="text-sm text-foreground">
-                {settings.lineCount} lines per claim •{" "}
-                {settings.cooldownMinutes} min cooldown
-              </div>
-            </Card>
-          </div>
-
-          {/* Claim Button Section */}
-          <Card className="p-8 mb-8 bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
-            <div className="flex flex-col items-center gap-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Ready to Claim Numbers?
-                </h2>
-                <p className="text-muted-foreground">
-                  {!queuedLinesAvailable
-                    ? "No lines available in queue"
-                    : canClaim
-                      ? `Click the button below to claim ${settings.lineCount} new numbers`
-                      : `Cooldown active: ${cooldownTimer || "Loading..."}`}
-                </p>
-              </div>
-
-              {(() => {
-                let buttonClass = "";
-                let buttonEmoji = "";
-                let buttonText = "";
-                let isDisabled = false;
-
-                if (!queuedLinesAvailable) {
-                  buttonClass =
-                    "bg-gray-400 hover:bg-gray-400 text-white cursor-not-allowed";
-                  buttonEmoji = "⚪️";
-                  buttonText = "No Lines Available";
-                  isDisabled = true;
-                } else if (!canClaim && cooldownTimer) {
-                  buttonClass = "bg-red-600 hover:bg-red-700 text-white";
-                  buttonEmoji = "🔴";
-                  buttonText = `Cooldown: ${cooldownTimer}`;
-                  isDisabled = true;
-                } else if (canClaim) {
-                  buttonClass = "bg-green-600 hover:bg-green-700 text-white";
-                  buttonEmoji = "🟢";
-                  buttonText = `Claim ${settings.lineCount} Numbers`;
-                  isDisabled = false;
-                } else {
-                  buttonClass =
-                    "bg-gray-400 hover:bg-gray-400 text-white cursor-not-allowed";
-                  buttonEmoji = "⚪️";
-                  buttonText = "No Lines Available";
-                  isDisabled = true;
-                }
-
-                return (
-                  <Button
-                    onClick={handleClaimNumbers}
-                    disabled={isDisabled || claimMutation.isPending || loadingClaims}
-                    size="lg"
-                    className={`${buttonClass} px-8 py-6 text-lg font-semibold`}
-                  >
-                    <span className="mr-2">{buttonEmoji}</span>
-                    {claimMutation.isPending ? (
-                      <>
-                        <Clock className="h-5 w-5 mr-2 animate-spin" />
-                        Claiming...
-                      </>
-                    ) : (
-                      buttonText
-                    )}
-                  </Button>
-                );
-              })()}
-            </div>
+            </CardContent>
           </Card>
 
-          {/* Claimed Numbers Section */}
-          {loadingClaims ? (
-            <Card className="p-8">
-              <div className="text-center text-muted-foreground">
-                Loading claimed numbers...
+          <Card className="border-border/40 shadow-sm">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className={`h-12 w-12 rounded-2xl ${canClaim ? "bg-emerald-500/10" : "bg-rose-500/10"} flex items-center justify-center`}>
+                {canClaim ? <CheckCircle className="h-6 w-6 text-emerald-600" /> : <Clock className="h-6 w-6 text-rose-600" />}
               </div>
-            </Card>
-          ) : claimedNumbers.length === 0 ? (
-            <Card className="p-8">
-              <div className="text-center">
-                <Clock className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="text-muted-foreground">
-                  No numbers claimed yet. Click the Claim button to get started!
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Status</p>
+                <p className={`text-2xl font-extrabold ${canClaim ? "text-emerald-600" : "text-rose-600"}`}>
+                  {canClaim ? "Ready" : "Cooldown"}
                 </p>
               </div>
-            </Card>
-          ) : (
-            <div>
-              <h2 className="text-xl font-bold text-foreground mb-4">
-                Your Claimed Numbers ({claimedNumbers.length}/
-                {settings.lineCount})
-              </h2>
-              <div className="space-y-3">
-                {claimedNumbers.map((number, index) => (
-                  <Card
-                    key={number._id}
-                    className="p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary text-sm font-semibold flex-shrink-0">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-foreground text-lg break-words">
-                            {number.content}
-                          </p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Claimed at: {formatDateTime(number.claimedAt)}
-                          </p>
-                        </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/40 shadow-sm">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                <RefreshCw className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Batch Size</p>
+                <p className="text-2xl font-extrabold text-foreground">{settings.lineCount}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="border-border/40 shadow-sm overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b border-border/40 p-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-1">
+                <CardTitle className="text-2xl font-bold">Claim New Numbers</CardTitle>
+                <CardDescription className="text-sm font-medium">
+                  {!queuedLinesAvailable
+                    ? "The queue is currently empty."
+                    : canClaim
+                      ? `You can claim ${settings.lineCount} new numbers now.`
+                      : `You can claim again in ${cooldownTimer}.`}
+                </CardDescription>
+              </div>
+              <Button
+                onClick={handleClaimNumbers}
+                disabled={!queuedLinesAvailable || !canClaim || claimMutation.isPending}
+                size="lg"
+                className={`h-14 px-10 rounded-xl font-bold text-base shadow-lg transition-all ${
+                   canClaim && queuedLinesAvailable ? "bg-primary hover:bg-primary/90 shadow-primary/20" : ""
+                }`}
+              >
+                {claimMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-5 w-5 mr-3 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Hash className="h-5 w-5 mr-3" />
+                    {canClaim ? `Claim ${settings.lineCount} Numbers` : cooldownTimer}
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="space-y-6">
+              <h3 className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-[0.2em]">Active Workload</h3>
+              {loadingClaims ? (
+                <div className="text-center py-10 text-muted-foreground font-medium">Loading claimed numbers...</div>
+              ) : claimedNumbers.length === 0 ? (
+                <div className="text-center py-12 bg-muted/20 rounded-2xl border border-dashed border-border/60">
+                  <div className="space-y-3 opacity-40">
+                    <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground" />
+                    <p className="text-sm font-bold">No active numbers</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {claimedNumbers.map((number, index) => (
+                    <div
+                      key={number._id}
+                      className="flex items-center gap-4 p-5 border border-border/40 rounded-2xl bg-muted/10 hover:bg-muted/20 transition-all group"
+                    >
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0 group-hover:scale-110 transition-transform">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-lg font-bold text-foreground break-all leading-tight tracking-tight">
+                          {number.content}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase mt-1">
+                          Claimed {formatDateTime(number.claimedAt)}
+                        </p>
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

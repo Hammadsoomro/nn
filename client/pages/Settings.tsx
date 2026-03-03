@@ -11,22 +11,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateOnly } from "@/lib/utils";
 import {
-  Upload,
-  AlertCircle,
-  Check,
   User,
   Users,
   Settings as SettingsIcon,
   Eye,
   EyeOff,
-  Megaphone,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AnnouncementPanel } from "@/components/AnnouncementPanel";
 
 interface ClaimSettings {
   lineCount: number;
@@ -94,7 +89,6 @@ function SorterSettingsPanel() {
         toast.success("Settings updated successfully");
       } else {
         const errorData = await response.json();
-        console.error("Settings save error:", errorData);
         toast.error(errorData.error || "Failed to update settings");
       }
     } catch (error) {
@@ -107,9 +101,9 @@ function SorterSettingsPanel() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border-border/40">
         <CardContent className="p-8">
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground font-medium">
             Loading settings...
           </div>
         </CardContent>
@@ -118,21 +112,21 @@ function SorterSettingsPanel() {
   }
 
   return (
-    <Card>
+    <Card className="border-border/40 shadow-sm">
       <CardHeader>
-        <CardTitle>Numbers Claim Settings</CardTitle>
-        <CardDescription>
-          Configure cooldown timer and claim line count
+        <CardTitle className="text-xl font-bold">Numbers Claim Settings</CardTitle>
+        <CardDescription className="text-xs">
+          Configure cooldown timer and claim line count for your team
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="space-y-3">
+      <CardContent className="space-y-8">
+        <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">
-                Cooldown Timer (seconds)
+              <Label className="text-sm font-bold text-foreground uppercase tracking-wider">
+                Cooldown Timer
               </Label>
-              <span className="text-sm font-semibold text-primary">
+              <span className="text-sm font-extrabold text-primary bg-primary/10 px-2 py-1 rounded-lg">
                 {cooldownLabels[
                   cooldownOptions.indexOf(settings.cooldownMinutes)
                 ] || settings.cooldownMinutes + "s"}
@@ -151,20 +145,20 @@ function SorterSettingsPanel() {
                   cooldownMinutes: cooldownOptions[index],
                 });
               }}
-              className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+              className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
             />
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
               <span>30s</span>
               <span>60m</span>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4 pt-4 border-t border-border/40">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">
-                Lines to Claim Per Request
+              <Label className="text-sm font-bold text-foreground uppercase tracking-wider">
+                Lines Per Request
               </Label>
-              <span className="text-sm font-semibold text-primary">
+              <span className="text-sm font-extrabold text-primary bg-primary/10 px-2 py-1 rounded-lg">
                 {settings.lineCount} lines
               </span>
             </div>
@@ -180,9 +174,9 @@ function SorterSettingsPanel() {
                   lineCount: parseInt(e.target.value),
                 });
               }}
-              className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+              className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
             />
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
               <span>1 line</span>
               <span>15 lines</span>
             </div>
@@ -192,9 +186,9 @@ function SorterSettingsPanel() {
         <Button
           onClick={handleSaveSettings}
           disabled={saving}
-          className="w-full"
+          className="w-full h-12 font-bold rounded-xl"
         >
-          {saving ? "Saving..." : "Save Settings"}
+          {saving ? "Saving Changes..." : "Save Settings"}
         </Button>
       </CardContent>
     </Card>
@@ -247,28 +241,29 @@ function AccountInfoPanel({
   };
 
   return (
-    <Card>
+    <Card className="border-border/40 shadow-sm">
       <CardHeader>
-        <CardTitle>Account Information</CardTitle>
-        <CardDescription>Manage your account details</CardDescription>
+        <CardTitle className="text-xl font-bold">Account Information</CardTitle>
+        <CardDescription className="text-xs text-muted-foreground">Manage your personal account details</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Name</Label>
+          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Full Name</Label>
           {editName ? (
             <div className="flex gap-2">
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter your name"
+                className="bg-background border-border/50 rounded-xl"
               />
               <Button
                 onClick={handleSaveName}
                 disabled={saving}
                 size="sm"
-                className="flex-shrink-0"
+                className="rounded-xl px-4 font-bold"
               >
-                {saving ? "Saving..." : "Save"}
+                Save
               </Button>
               <Button
                 onClick={() => {
@@ -277,22 +272,19 @@ function AccountInfoPanel({
                 }}
                 variant="outline"
                 size="sm"
-                className="flex-shrink-0"
+                className="rounded-xl px-4"
               >
                 Cancel
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
-              <Input
-                value={user?.name || ""}
-                disabled
-                className="bg-transparent border-0"
-              />
+            <div className="flex items-center justify-between p-4 border border-border/40 rounded-xl bg-muted/30">
+              <p className="font-bold text-foreground">{user?.name}</p>
               <Button
                 onClick={() => setEditName(true)}
-                variant="outline"
+                variant="ghost"
                 size="sm"
+                className="text-primary font-bold hover:bg-primary/5"
               >
                 Edit
               </Button>
@@ -300,19 +292,14 @@ function AccountInfoPanel({
           )}
         </div>
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Email</Label>
-          <Input value={user?.email || ""} disabled className="bg-muted" />
-          <p className="text-xs text-muted-foreground">
-            Email cannot be changed
-          </p>
+          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Email Address</Label>
+          <Input value={user?.email || ""} disabled className="bg-muted/30 border-border/40 rounded-xl font-medium" />
         </div>
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Role</Label>
-          <Input
-            value={user?.role || ""}
-            disabled
-            className="bg-muted capitalize"
-          />
+          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">User Role</Label>
+          <div className="px-4 py-3 border border-border/40 rounded-xl bg-muted/30">
+             <span className="text-sm font-extrabold capitalize text-foreground">{user?.role}</span>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -393,15 +380,15 @@ function PasswordChangePanel({
   };
 
   return (
-    <Card>
+    <Card className="border-border/40 shadow-sm">
       <CardHeader>
-        <CardTitle>Change Password</CardTitle>
-        <CardDescription>Update your account password</CardDescription>
+        <CardTitle className="text-xl font-bold">Security</CardTitle>
+        <CardDescription className="text-xs text-muted-foreground">Update your account password</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleChangePassword} className="space-y-4">
+        <form onSubmit={handleChangePassword} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="current-password" className="text-sm font-medium">
+            <Label htmlFor="current-password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
               Current Password
             </Label>
             <div className="relative">
@@ -409,6 +396,7 @@ function PasswordChangePanel({
                 id="current-password"
                 type={showCurrentPassword ? "text" : "password"}
                 placeholder="••••••••"
+                className="bg-background border-border/50 rounded-xl"
                 value={formData.currentPassword}
                 onChange={(e) =>
                   setFormData({
@@ -432,7 +420,7 @@ function PasswordChangePanel({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="new-password" className="text-sm font-medium">
+            <Label htmlFor="new-password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
               New Password
             </Label>
             <div className="relative">
@@ -440,6 +428,7 @@ function PasswordChangePanel({
                 id="new-password"
                 type={showNewPassword ? "text" : "password"}
                 placeholder="••••••••"
+                className="bg-background border-border/50 rounded-xl"
                 value={formData.newPassword}
                 onChange={(e) =>
                   setFormData({
@@ -463,14 +452,15 @@ function PasswordChangePanel({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirm-password" className="text-sm font-medium">
-              Confirm Password
+            <Label htmlFor="confirm-password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+              Confirm New Password
             </Label>
             <div className="relative">
               <Input
                 id="confirm-password"
                 type={showConfirmPassword ? "text" : "password"}
-                placeholder="••••••���•"
+                placeholder="••••••••"
+                className="bg-background border-border/50 rounded-xl"
                 value={formData.confirmPassword}
                 onChange={(e) =>
                   setFormData({
@@ -493,8 +483,8 @@ function PasswordChangePanel({
             </div>
           </div>
 
-          <Button type="submit" disabled={saving} className="w-full">
-            {saving ? "Changing..." : "Change Password"}
+          <Button type="submit" disabled={saving} className="w-full h-12 font-bold rounded-xl">
+            {saving ? "Updating..." : "Update Password"}
           </Button>
         </form>
       </CardContent>
@@ -606,9 +596,9 @@ function TeamMembersPanel() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border-border/40">
         <CardContent className="p-8">
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground font-medium">
             Loading team members...
           </div>
         </CardContent>
@@ -618,127 +608,136 @@ function TeamMembersPanel() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create Team Member</CardTitle>
-          <CardDescription>Add a new member to your team</CardDescription>
+      <Card className="border-border/40 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-xl font-bold">Team Management</CardTitle>
+            <CardDescription className="text-xs">Add and manage your team members</CardDescription>
+          </div>
+          {!showForm && (
+            <Button onClick={() => setShowForm(true)} className="rounded-xl font-bold px-6">
+              Add Member
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
-          {!showForm ? (
-            <Button onClick={() => setShowForm(true)} className="w-full">
-              Add New Team Member
-            </Button>
-          ) : (
-            <form onSubmit={handleCreateMember} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="member-name" className="text-sm font-medium">
-                  Name
-                </Label>
-                <Input
-                  id="member-name"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="member-email" className="text-sm font-medium">
-                  Email
-                </Label>
-                <Input
-                  id="member-email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="member-password"
-                  className="text-sm font-medium"
-                >
-                  Password
-                </Label>
-                <div className="relative">
+          {showForm && (
+            <form onSubmit={handleCreateMember} className="space-y-5 border-b border-border/40 pb-8 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="member-name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+                    Name
+                  </Label>
                   <Input
-                    id="member-password"
-                    type={showPasswords["password"] ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.password}
+                    id="member-name"
+                    placeholder="John Doe"
+                    className="bg-background border-border/50 rounded-xl"
+                    value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
+                      setFormData({ ...formData, name: e.target.value })
                     }
                   />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowPasswords({
-                        ...showPasswords,
-                        password: !showPasswords["password"],
-                      })
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="member-email" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+                    Email
+                  </Label>
+                  <Input
+                    id="member-email"
+                    type="email"
+                    placeholder="john@example.com"
+                    className="bg-background border-border/50 rounded-xl"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="member-password"
+                    className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1"
                   >
-                    {showPasswords["password"] ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="member-password"
+                      type={showPasswords["password"] ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="bg-background border-border/50 rounded-xl"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPasswords({
+                          ...showPasswords,
+                          password: !showPasswords["password"],
+                        })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showPasswords["password"] ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="member-confirm-password"
+                    className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1"
+                  >
+                    Confirm Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="member-confirm-password"
+                      type={
+                        showPasswords["confirmPassword"] ? "text" : "password"
+                      }
+                      placeholder="••••••••"
+                      className="bg-background border-border/50 rounded-xl"
+                      value={formData.confirmPassword}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPasswords({
+                          ...showPasswords,
+                          confirmPassword: !showPasswords["confirmPassword"],
+                        })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showPasswords["confirmPassword"] ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label
-                  htmlFor="member-confirm-password"
-                  className="text-sm font-medium"
-                >
-                  Confirm Password
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="member-confirm-password"
-                    type={
-                      showPasswords["confirmPassword"] ? "text" : "password"
-                    }
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowPasswords({
-                        ...showPasswords,
-                        confirmPassword: !showPasswords["confirmPassword"],
-                      })
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPasswords["confirmPassword"] ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button type="submit" disabled={submitting} className="flex-1">
-                  {submitting ? "Creating..." : "Create Member"}
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" disabled={submitting} className="flex-1 h-12 rounded-xl font-bold">
+                  {submitting ? "Creating..." : "Confirm & Create"}
                 </Button>
                 <Button
                   type="button"
@@ -752,56 +751,49 @@ function TeamMembersPanel() {
                       confirmPassword: "",
                     });
                   }}
-                  className="flex-1"
+                  className="flex-1 h-12 rounded-xl"
                 >
                   Cancel
                 </Button>
               </div>
             </form>
           )}
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-          <CardDescription>
-            {members.length} member{members.length !== 1 ? "s" : ""} in your
-            team
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {members.length === 0 ? (
-            <div className="text-center text-muted-foreground py-6">
-              No team members yet
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {members.map((member) => (
-                <div
-                  key={member._id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">
-                      {member.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {member.email}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-foreground capitalize">
-                      {member.role}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDateOnly(member.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="space-y-3">
+             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">
+               Active Team ({members.length})
+             </p>
+             {members.length === 0 ? (
+               <div className="text-center text-muted-foreground py-10 bg-muted/20 rounded-2xl border border-dashed border-border/60">
+                 No team members yet
+               </div>
+             ) : (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                 {members.map((member) => (
+                   <div
+                     key={member._id}
+                     className="flex items-center gap-3 p-4 border border-border/40 rounded-2xl bg-muted/20 hover:bg-muted/40 transition-all group"
+                   >
+                     <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-secondary-foreground group-hover:scale-110 transition-transform">
+                       {member.name.split(" ").map(n => n[0]).join("").toUpperCase()}
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <p className="font-bold text-foreground text-sm truncate leading-tight">
+                         {member.name}
+                       </p>
+                       <p className="text-[10px] text-muted-foreground font-medium truncate">
+                         {member.email}
+                       </p>
+                     </div>
+                     <div className="text-right flex flex-col items-end gap-1">
+                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 bg-primary/10 text-primary rounded-md capitalize tracking-wider">{member.role}</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase">{formatDateOnly(member.createdAt)}</span>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             )}
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -810,255 +802,53 @@ function TeamMembersPanel() {
 
 export default function SettingsPage() {
   const { user, token, isAdmin } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [profilePicture, setProfilePicture] = useState<string>(
-    user?.profilePictureUrl || "",
-  );
-  const [previewUrl, setPreviewUrl] = useState<string>(
-    user?.profilePictureUrl || "",
-  );
-
-  const getInitials = (name: string | undefined) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB");
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("File must be an image");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    setProfilePicture(file.name);
-  };
-
-  const handleUpload = async () => {
-    if (!previewUrl || !token) return;
-
-    try {
-      setLoading(true);
-      setSuccess(false);
-
-      const response = await fetch("/api/profile/upload-picture", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          profilePictureUrl: previewUrl,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload profile picture");
-      }
-
-      setSuccess(true);
-      toast.success("Profile picture updated successfully");
-
-      if (user) {
-        const updatedUser = { ...user, profilePictureUrl: previewUrl };
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-      }
-    } catch (error) {
-      toast.error("Failed to upload profile picture");
-      console.error("Upload error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Layout>
-      <div
-        className="max-w-4xl py-8"
-        style={{ width: "auto", margin: "0 auto" }}
-      >
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">
-              Manage your account, team, and preferences
-            </p>
-          </div>
-
-          {/* Tabs */}
-          <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList
-              className={`grid w-full ${isAdmin ? "grid-cols-4" : "grid-cols-1"}`}
-            >
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">Profile</span>
-              </TabsTrigger>
-
-              {isAdmin && (
-                <TabsTrigger value="team" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Team</span>
-                </TabsTrigger>
-              )}
-
-              {isAdmin && (
-                <TabsTrigger value="sorter" className="flex items-center gap-2">
-                  <SettingsIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sorter</span>
-                </TabsTrigger>
-              )}
-
-              {isAdmin && (
-                <TabsTrigger
-                  value="announcements"
-                  className="flex items-center gap-2"
-                >
-                  <Megaphone className="h-4 w-4" />
-                  <span className="hidden sm:inline">Announcements</span>
-                </TabsTrigger>
-              )}
-            </TabsList>
-
-            {/* Profile Settings Tab */}
-            <TabsContent value="profile" className="space-y-6">
-              {/* Profile Picture Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Profile Picture</CardTitle>
-                  <CardDescription>
-                    Upload a profile picture to personalize your account
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Current and Preview */}
-                  <div className="flex gap-8 items-center">
-                    <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">
-                        Current
-                      </Label>
-                      <Avatar className="h-24 w-24">
-                        <AvatarImage src={user?.profilePictureUrl} />
-                        <AvatarFallback className="bg-primary/20 text-primary text-lg">
-                          {getInitials(user?.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-
-                    {previewUrl && previewUrl !== user?.profilePictureUrl && (
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">
-                          Preview
-                        </Label>
-                        <Avatar className="h-24 w-24">
-                          <AvatarImage src={previewUrl} />
-                          <AvatarFallback className="bg-primary/20 text-primary text-lg">
-                            {getInitials(user?.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Upload Section */}
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors">
-                      <label htmlFor="file-input" className="cursor-pointer">
-                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm font-medium">
-                          Click to upload or drag and drop
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          PNG, JPG, GIF up to 5MB
-                        </p>
-                      </label>
-                      <input
-                        id="file-input"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </div>
-
-                    {profilePicture && (
-                      <p className="text-sm text-muted-foreground">
-                        Selected: {profilePicture}
-                      </p>
-                    )}
-
-                    {success && (
-                      <div className="flex gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                        <p className="text-sm text-green-800">
-                          Profile picture updated successfully
-                        </p>
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={handleUpload}
-                      disabled={
-                        !previewUrl ||
-                        loading ||
-                        previewUrl === user?.profilePictureUrl
-                      }
-                      className="w-full"
-                    >
-                      {loading ? "Uploading..." : "Upload Picture"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Account Information Card */}
-              <AccountInfoPanel user={user} token={token} />
-
-              {/* Password Change Card */}
-              <PasswordChangePanel user={user} token={token} />
-            </TabsContent>
-
-            {/* Team Management Tab (Admin Only) */}
-            {isAdmin && (
-              <TabsContent value="team" className="space-y-6">
-                <TeamMembersPanel />
-              </TabsContent>
-            )}
-
-            {/* Sorter Settings Tab (Admin Only) */}
-            {isAdmin && (
-              <TabsContent value="sorter" className="space-y-6">
-                <SorterSettingsPanel />
-              </TabsContent>
-            )}
-
-            {/* Announcements Tab (Admin Only) */}
-            {isAdmin && (
-              <TabsContent value="announcements" className="space-y-6">
-                <AnnouncementPanel />
-              </TabsContent>
-            )}
-          </Tabs>
+      <div className="p-6 md:p-10 max-w-[1200px] mx-auto space-y-8">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Settings
+          </h1>
+          <p className="text-muted-foreground font-medium">
+            Manage your personal profile and platform configurations.
+          </p>
         </div>
+
+        <Tabs defaultValue="profile" className="space-y-8">
+          <TabsList className="bg-muted/40 p-1 rounded-2xl border border-border/40">
+            <TabsTrigger value="profile" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
+              My Profile
+            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="team" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
+                Team
+              </TabsTrigger>
+            )}
+            {isAdmin && (
+              <TabsTrigger value="sorter" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
+                Config
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          <TabsContent value="profile" className="space-y-6 animate-fade-in">
+            <AccountInfoPanel user={user} token={token} />
+            <PasswordChangePanel user={user} token={token} />
+          </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="team" className="animate-fade-in">
+              <TeamMembersPanel />
+            </TabsContent>
+          )}
+
+          {isAdmin && (
+            <TabsContent value="sorter" className="animate-fade-in">
+              <SorterSettingsPanel />
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </Layout>
   );

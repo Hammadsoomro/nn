@@ -27,24 +27,6 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.dataset.zone = "10675508";
-    script.src = "https://gizokraijaw.net/vignette.min.js";
-    const container = [document.documentElement, document.body]
-      .filter(Boolean)
-      .pop();
-    if (container) {
-      container.appendChild(script);
-    }
-
-    return () => {
-      if (container && script.parentNode === container) {
-        container.removeChild(script);
-      }
-    };
-  }, []);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -103,19 +85,23 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <UserPlus className="h-6 w-6 text-primary" />
+            <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <MessageSquare className="h-10 w-10 text-primary-foreground fill-current" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Create Account</h1>
-          <p className="text-muted-foreground">
-            Sign up as an admin to get started and manage your team
-          </p>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
+              Connectify
+            </h1>
+            <p className="text-muted-foreground font-medium">
+              SMS Platform
+            </p>
+          </div>
         </div>
 
         {/* Form Card */}
