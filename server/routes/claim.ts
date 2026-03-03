@@ -116,6 +116,12 @@ export const claimNumbers: RequestHandler = async (req, res) => {
 
     const collections = getCollections();
 
+    // Automatically release previous claims for this user before claiming new ones
+    await collections.claimedNumbers.deleteMany({
+      teamId,
+      claimedBy: userId,
+    });
+
     // Get user name
     const user = await collections.users.findOne({
       _id: new ObjectId(userId),
@@ -184,26 +190,23 @@ export const claimNumbers: RequestHandler = async (req, res) => {
       today.setHours(0, 0, 0, 0);
       const todayString = today.toISOString();
 
-      const claimedToday = await collections.claimedNumbers
-        .find({
+      const claimedTodayCount = await collections.claimedNumbers
+        .countDocuments({
           teamId,
           claimedBy: userId,
           claimedAt: { $gte: todayString },
-        })
-        .toArray();
+        });
 
       io.emit("claimed-today-updated", {
-        count: claimedToday.length,
+        count: claimedTodayCount,
         teamId,
         userId,
       });
 
       // Also emit update for queued lines count (since lines were removed)
-      const queuedLines = await collections.queuedLines
-        .find({ teamId })
-        .toArray();
+      const queuedLinesCount = await collections.queuedLines.countDocuments({ teamId });
       io.emit("lines-queued-updated", {
-        count: queuedLines.length,
+        count: queuedLinesCount,
         teamId,
       });
     }

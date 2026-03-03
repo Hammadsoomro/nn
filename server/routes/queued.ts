@@ -31,22 +31,17 @@ export const addToQueue: RequestHandler = async (req, res) => {
 
     const result = await collections.queuedLines.insertMany(linesToInsert);
 
-    const addedLines: QueuedLine[] = linesToInsert.map((line, idx) => ({
-      _id: result.insertedIds[idx].toString(),
-      ...line,
-    }));
-
     // Emit real-time update for queued lines
     const io = getIO();
     if (io) {
-      const allLines = await collections.queuedLines.find({ teamId }).toArray();
+      const count = await collections.queuedLines.countDocuments({ teamId });
       io.emit("lines-queued-updated", {
-        count: allLines.length,
+        count,
         teamId,
       });
     }
 
-    res.json({ success: true, lines: addedLines });
+    res.json({ success: true, count: result.insertedCount });
   } catch (error) {
     console.error("Add to queue error:", error);
     res.status(400).json({ error: "Invalid request" });
@@ -85,8 +80,16 @@ export const getQueuedLines: RequestHandler = async (req, res) => {
 };
 
 export const clearQueuedLine: RequestHandler = async (req, res) => {
+  // ... existing code ...
+};
+
+export const deduplicateLines: RequestHandler = async (req, res) => {
   try {
-    const { lineId } = req.params;
+    const schema = z.object({
+      lines: z.array(z.string()),
+    });
+
+    const validated = schema.parse(req.body);
     const teamId = (req as any).teamId;
 
     if (!teamId) {
@@ -96,29 +99,57 @@ export const clearQueuedLine: RequestHandler = async (req, res) => {
 
     const collections = getCollections();
 
-    const result = await collections.queuedLines.deleteOne({
-      _id: new ObjectId(lineId),
-      teamId,
-    });
+    // 1. Get ALL queued lines for exact match
+    // Optimization: Instead of fetching all, we could use $in check if the input is small,
+    // but the user wants "super fast" and if input is large, $in is also slow.
+    // However, fetching all into memory is worse.
+    // Let's use aggregation or $in for checking existence.
 
-    if (result.deletedCount === 0) {
-      res.status(404).json({ error: "Line not found or unauthorized" });
+    const inputLines = validated.lines.map(l => l.trim().toLowerCase()).filter(l => l);
+    if (inputLines.length === 0) {
+      res.json({ unique: [] });
       return;
     }
 
-    // Emit real-time update for queued lines
-    const io = getIO();
-    if (io) {
-      const allLines = await collections.queuedLines.find({ teamId }).toArray();
-      io.emit("lines-queued-updated", {
-        count: allLines.length,
-        teamId,
-      });
-    }
+    // Use a more efficient way to check existence
+    // We'll check in chunks if necessary, but for now $in should be fine for a few thousand
+    const existingQueued = await collections.queuedLines
+      .find({ teamId, content: { $in: inputLines } })
+      .project({ content: 1 })
+      .toArray();
 
-    res.json({ success: true });
+    const existingHistory = await collections.history
+      .find({ teamId, content: { $in: inputLines } })
+      .project({ content: 1 })
+      .toArray();
+
+    const queuedSet = new Set(existingQueued.map(l => l.content.toLowerCase()));
+    const historySet = new Set(existingHistory.map(l => l.content.toLowerCase()));
+
+    const getFirstWords = (text: string) => text.split(/\s+/).slice(0, 15).join(" ");
+
+    const seen = new Set<string>();
+    const unique: string[] = [];
+
+    validated.lines.forEach((line) => {
+      const trimmedLine = line.trim().toLowerCase();
+      if (!trimmedLine) return;
+
+      const key = getFirstWords(trimmedLine);
+
+      if (
+        !seen.has(key) &&
+        !queuedSet.has(trimmedLine) &&
+        !historySet.has(trimmedLine)
+      ) {
+        seen.add(key);
+        unique.push(line);
+      }
+    });
+
+    res.json({ unique });
   } catch (error) {
-    console.error("Clear queued line error:", error);
-    res.status(400).json({ error: "Failed to clear line" });
+    console.error("Deduplicate lines error:", error);
+    res.status(400).json({ error: "Failed to deduplicate lines" });
   }
 };

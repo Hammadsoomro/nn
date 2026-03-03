@@ -99,9 +99,12 @@ export default function NumbersSorter() {
     }
   });
 
-  // Local Storage Sync
+  // Debounced Local Storage Sync for Input
   useEffect(() => {
-    localStorage.setItem("sorterInput", inputNumbers);
+    const timeout = setTimeout(() => {
+      localStorage.setItem("sorterInput", inputNumbers);
+    }, 500); // 500ms debounce
+    return () => clearTimeout(timeout);
   }, [inputNumbers]);
 
   useEffect(() => {
@@ -124,43 +127,15 @@ export default function NumbersSorter() {
     try {
       setIsDeduplicating(true);
 
-      const [queuedResponse, historyResponse] = await Promise.all([
-        apiFetch("/api/queued", { token }),
-        apiFetch("/api/history", { token })
-      ]);
-
-      const queuedLines = new Set(
-        (queuedResponse.lines || []).map((line: any) =>
-          line.content.trim().toLowerCase(),
-        ),
-      );
-
-      const historyLines = new Set(
-        (historyResponse.entries || []).map((entry: any) =>
-          entry.content.trim().toLowerCase(),
-        ),
-      );
-
-      const getFirstWords = (text: string) => text.split(/\s+/).slice(0, 15).join(" ");
-
-      const seen = new Set<string>();
-      const unique: string[] = [];
-
-      lines.forEach((line) => {
-        const trimmedLine = line.trim().toLowerCase();
-        const key = getFirstWords(trimmedLine);
-
-        if (
-          !seen.has(key) &&
-          !queuedLines.has(trimmedLine) &&
-          !historyLines.has(trimmedLine)
-        ) {
-          seen.add(key);
-          unique.push(line);
-        }
+      const response = await apiFetch("/api/queued/deduplicate", {
+        method: "POST",
+        body: JSON.stringify({ lines }),
+        token,
       });
 
+      const unique = response.unique || [];
       setDeduplicated(unique);
+
       if (unique.length === 0) {
         toast.info("All lines already exist in Queued List or History");
       } else {
@@ -275,24 +250,12 @@ export default function NumbersSorter() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="bg-secondary/50 rounded-lg p-4 min-h-64 max-h-96 overflow-y-auto space-y-2 border border-border">
-                  {deduplicated.length > 0 ? (
-                    deduplicated.map((line, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 bg-background rounded border border-border/50 hover:border-primary/50 transition-colors group"
-                      >
-                        <p className="text-sm text-foreground break-words">
-                          {line}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      <p>Deduplicated lines will appear here</p>
-                    </div>
-                  )}
-                </div>
+                <Textarea
+                  readOnly
+                  value={deduplicated.join("\n")}
+                  className="min-h-96 resize-none bg-secondary/50 border-border"
+                  placeholder="Deduplicated lines will appear here..."
+                />
               </CardContent>
             </Card>
 

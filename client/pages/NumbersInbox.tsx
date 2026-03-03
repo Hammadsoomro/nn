@@ -52,14 +52,7 @@ export default function NumbersInbox() {
   // Mutations
   const claimMutation = useMutation({
     mutationFn: async () => {
-      // Release previous claims if any
-      if (claimedNumbers.length > 0) {
-        await apiFetch("/api/claim/release", {
-          method: "POST",
-          token,
-        });
-      }
-      // Claim new numbers
+      // Claim new numbers (automatically releases previous ones on server)
       return apiFetch("/api/claim", {
         method: "POST",
         token,
