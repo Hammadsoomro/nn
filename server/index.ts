@@ -56,8 +56,6 @@ export async function createServer() {
   };
 
   app.use(cors(corsOptions));
-  // Explicitly handle OPTIONS requests
-  app.options("*", cors(corsOptions));
 
   // Request logger
   app.use((req, res, next) => {
