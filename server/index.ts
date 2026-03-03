@@ -69,7 +69,7 @@ export async function createServer() {
 
   app.use(cors(corsOptions));
   // Explicitly handle OPTIONS requests
-  app.options("*", cors(corsOptions));
+  app.options("(.*)", cors(corsOptions));
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
