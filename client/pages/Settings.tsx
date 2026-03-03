@@ -23,10 +23,8 @@ import {
   Settings as SettingsIcon,
   Eye,
   EyeOff,
-  Megaphone,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AnnouncementPanel } from "@/components/AnnouncementPanel";
 
 interface ClaimSettings {
   lineCount: number;
@@ -907,7 +905,7 @@ export default function SettingsPage() {
           {/* Tabs */}
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList
-              className={`grid w-full ${isAdmin ? "grid-cols-4" : "grid-cols-1"}`}
+              className={`grid w-full ${isAdmin ? "grid-cols-3" : "grid-cols-1"}`}
             >
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
@@ -925,16 +923,6 @@ export default function SettingsPage() {
                 <TabsTrigger value="sorter" className="flex items-center gap-2">
                   <SettingsIcon className="h-4 w-4" />
                   <span className="hidden sm:inline">Sorter</span>
-                </TabsTrigger>
-              )}
-
-              {isAdmin && (
-                <TabsTrigger
-                  value="announcements"
-                  className="flex items-center gap-2"
-                >
-                  <Megaphone className="h-4 w-4" />
-                  <span className="hidden sm:inline">Announcements</span>
                 </TabsTrigger>
               )}
             </TabsList>
@@ -1048,13 +1036,6 @@ export default function SettingsPage() {
             {isAdmin && (
               <TabsContent value="sorter" className="space-y-6">
                 <SorterSettingsPanel />
-              </TabsContent>
-            )}
-
-            {/* Announcements Tab (Admin Only) */}
-            {isAdmin && (
-              <TabsContent value="announcements" className="space-y-6">
-                <AnnouncementPanel />
               </TabsContent>
             )}
           </Tabs>
