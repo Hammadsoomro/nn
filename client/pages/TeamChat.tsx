@@ -4,7 +4,6 @@ import { useSocket } from "@/context/SocketContext";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -19,8 +18,9 @@ import {
   Bell,
   BellOff,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 
 interface Contact {
   _id: string;
@@ -40,27 +40,85 @@ interface ChatMessage {
 }
 
 export default function Chat() {
-  const { user } = useAuth();
-  const { socket, isConnected } = useSocket();
-  const navigate = useNavigate();
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const { user, token } = useAuth();
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>(
-    {},
-  );
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch contacts
+  const { data: contacts = [], isLoading: isLoadingContacts } = useQuery<Contact[]>({
+    queryKey: ["members"],
+    queryFn: () => apiFetch("/api/members", { token }),
+    enabled: !!token,
+  });
 
   const filteredContacts = contacts.filter(
     (contact) =>
       contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+
+  // Fetch messages with polling fallback
+  const { data: rawMessages = [], refetch: refetchMessages } = useQuery({
+    queryKey: ["chat-messages", selectedContact?._id],
+    queryFn: () => apiFetch(`/api/chat/messages?recipient=${selectedContact?._id}`, { token }),
+    enabled: !!token && !!selectedContact,
+    refetchInterval: 3000, // Poll every 3s in case sockets are down
+  });
+
+  const messages: ChatMessage[] = rawMessages.map((msg: any) => ({
+    id: msg._id,
+    senderId: msg.sender,
+    receiverId: msg.recipient,
+    content: msg.content,
+    timestamp: new Date(msg.createdAt),
+    senderName: msg.senderName,
+  }));
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: (content: string) => {
+      if (!selectedContact || !user) throw new Error("No contact selected");
+      return apiFetch("/api/chat/send", {
+        method: "POST",
+        token,
+        body: JSON.stringify({
+          recipient: selectedContact._id,
+          content,
+        }),
+      });
+    },
+    onMutate: async (content) => {
+      // Optimistic Update
+      await queryClient.cancelQueries({ queryKey: ["chat-messages", selectedContact?._id] });
+      const previousMessages = queryClient.getQueryData<any[]>(["chat-messages", selectedContact?._id]);
+
+      const newMessage = {
+        _id: `temp-${Date.now()}`,
+        sender: user?._id,
+        recipient: selectedContact?._id,
+        content,
+        createdAt: new Date().toISOString(),
+        senderName: user?.name,
+      };
+
+      queryClient.setQueryData(["chat-messages", selectedContact?._id], [...(previousMessages || []), newMessage]);
+      return { previousMessages };
+    },
+    onSuccess: () => {
+      setMessageInput("");
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", selectedContact?._id] });
+    },
+    onError: (err, content, context) => {
+      queryClient.setQueryData(["chat-messages", selectedContact?._id], context?.previousMessages);
+      toast.error("Failed to send message");
+    },
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,299 +128,25 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
-  // Request notification permission on mount
+  // Request notification permission
   useEffect(() => {
-    if ("Notification" in window) {
-      console.log(
-        "Notification API available. Current permission:",
-        Notification.permission,
-      );
-      if (Notification.permission === "granted") {
-        setNotificationsEnabled(true);
-        console.log("Notifications already granted");
-      } else if (Notification.permission === "default") {
-        console.log(
-          "Notification permission is default, not requesting automatically",
-        );
-      } else if (Notification.permission === "denied") {
-        console.log("Notifications are denied by user");
-      }
-    } else {
-      console.log("Notification API not available in this browser");
+    if ("Notification" in window && Notification.permission === "granted") {
+      setNotificationsEnabled(true);
     }
   }, []);
-
-  const showDesktopNotification = (
-    senderName: string,
-    messageContent: string,
-  ) => {
-    if ("Notification" in window) {
-      console.log("Checking notification permission:", Notification.permission);
-      if (Notification.permission === "granted") {
-        try {
-          const notification = new Notification(
-            "New Message from " + senderName,
-            {
-              body: messageContent,
-              icon: "/placeholder.svg",
-              badge: "/placeholder.svg",
-              tag: "message-notification",
-              requireInteraction: false,
-            },
-          );
-
-          notification.onclick = () => {
-            console.log("Notification clicked");
-            window.focus();
-            notification.close();
-          };
-
-          notification.onerror = (error) => {
-            console.error("Notification error:", error);
-          };
-
-          console.log("Desktop notification sent to:", senderName);
-        } catch (error) {
-          console.error("Failed to create notification:", error);
-        }
-      } else {
-        console.log(
-          "Notification permission not granted:",
-          Notification.permission,
-        );
-      }
-    } else {
-      console.log("Notification API not available");
-    }
-  };
-
-  useEffect(() => {
-    const loadContacts = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch("/api/members", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setContacts(data);
-        } else {
-          toast.error("Failed to load contacts");
-        }
-      } catch (error) {
-        console.error("Failed to load contacts:", error);
-        toast.error("Failed to load contacts");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadContacts();
-  }, []);
-
-  useEffect(() => {
-    if (!socket || !user) return;
-
-    socket.on("new-message", (message: any) => {
-      console.log("[Socket] Received message:", message);
-      const formattedMessage: ChatMessage = {
-        _id: message.messageId || message._id || Date.now().toString(),
-        sender: message.sender || message.senderId,
-        content: message.content,
-        createdAt: message.timestamp || new Date().toISOString(),
-        senderName: message.senderName,
-      };
-
-      // Create a compatible message for local display
-      const displayMessage = {
-        id: message.messageId || message._id || Date.now().toString(),
-        senderId: message.sender || message.senderId,
-        receiverId: message.receiverId || message.recipient,
-        content: message.content,
-        timestamp: new Date(message.timestamp || new Date()),
-        senderName: message.senderName,
-      };
-
-      console.log("[Chat] Display message:", displayMessage);
-      console.log("[Chat] Selected contact:", selectedContact);
-      console.log("[Chat] User ID:", user?._id);
-
-      // Show desktop notification regardless of focused tab
-      showDesktopNotification(
-        displayMessage.senderName || "Team Member",
-        displayMessage.content,
-      );
-
-      // Add message if it's between current user and selected contact
-      if (selectedContact) {
-        const isFromSelectedContact = displayMessage.senderId === selectedContact._id;
-        const isFromCurrentUser = displayMessage.senderId === user._id;
-
-        // For direct messaging, if message is in our chat, add it
-        if (
-          (isFromSelectedContact) ||
-          (isFromCurrentUser)
-        ) {
-          console.log("[Chat] Message is for selected contact, checking for duplicates");
-          // Check if message already exists (prevent duplicates)
-          setMessages((prev) => {
-            const isDuplicate = prev.some((msg) => msg.id === displayMessage.id);
-            if (isDuplicate) {
-              console.log("[Chat] Message already exists, skipping");
-              return prev;
-            }
-            console.log("[Chat] Adding new message");
-            return [...prev, displayMessage];
-          });
-          if (!isFromCurrentUser) {
-            playNotificationSound();
-          }
-        }
-      } else if (!selectedContact) {
-        console.log("[Chat] No contact selected, showing toast");
-        setUnreadCounts((prev) => ({
-          ...prev,
-          [displayMessage.senderId]: (prev[displayMessage.senderId] || 0) + 1,
-        }));
-        playNotificationSound();
-        toast.custom(
-          (t) => (
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-2xl p-4 flex items-center gap-3 animate-in slide-in-from-top">
-              <div className="bg-white bg-opacity-20 rounded-full p-2">
-                <MessageCircle className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold">
-                  {displayMessage.senderName || "New Message"}
-                </p>
-                <p className="text-sm text-blue-100 truncate">
-                  {displayMessage.content}
-                </p>
-              </div>
-              <button
-                onClick={() => toast.dismiss(t)}
-                className="text-blue-200 hover:text-white transition"
-              >
-                ✕
-              </button>
-            </div>
-          ),
-          {
-            duration: 4000,
-            position: "top-center",
-          },
-        );
-      }
-    });
-
-    return () => {
-      socket.off("new-message");
-    };
-  }, [socket, user, selectedContact]);
-
-  const playNotificationSound = () => {
-    const audioContext = new (window.AudioContext ||
-      (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.frequency.value = 800;
-    oscillator.type = "sine";
-
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(
-      0.01,
-      audioContext.currentTime + 0.1,
-    );
-
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.1);
-  };
-
-  const handleSelectContact = async (contact: Contact) => {
-    setSelectedContact(contact);
-    setUnreadCounts((prev) => ({
-      ...prev,
-      [contact._id]: 0,
-    }));
-
-    // Create a consistent room ID for both users (smaller ID first)
-    if (socket && user?._id) {
-      const roomId = [user._id, contact._id].sort().join("_");
-      console.log(`[Chat] Joining room: ${roomId}`);
-      socket.emit("join-chat", {
-        chatId: roomId,
-        userId: user._id,
-      });
-    }
-
-    // Load messages from database
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `/api/chat/messages?recipient=${contact._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      if (response.ok) {
-        const messages = await response.json();
-        setMessages(
-          messages.map((msg: any) => ({
-            id: msg._id,
-            senderId: msg.sender,
-            receiverId: msg.recipient,
-            content: msg.content,
-            timestamp: new Date(msg.createdAt),
-            senderName: msg.senderName,
-          }))
-        );
-      }
-    } catch (error) {
-      console.error("Failed to load messages:", error);
-    }
-  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageInput.trim() || !socket || !selectedContact || !user) return;
+    if (!messageInput.trim() || !selectedContact || sendMessageMutation.isPending) return;
+    sendMessageMutation.mutate(messageInput.trim());
+  };
 
-    // Create consistent room ID (same as in handleSelectContact)
-    const roomId = [user._id, selectedContact._id].sort().join("_");
-
-    // Generate unique message ID (timestamp + random suffix to avoid collisions)
-    const messageId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    const messageData = {
-      messageId,
-      sender: user._id,
-      senderName: user.name,
-      recipient: selectedContact._id,
-      chatId: roomId,
-      content: messageInput.trim(),
-      timestamp: new Date().toISOString(),
-    };
-
-    // Emit to socket for real-time delivery
-    socket.emit("send-message", messageData);
-
-    // Add message to local state
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: messageId,
-        senderId: user._id,
-        receiverId: selectedContact._id,
-        content: messageInput,
-        timestamp: new Date(),
-        senderName: user.name,
-      },
-    ]);
-
-    setMessageInput("");
+  const handleSelectContact = (contact: Contact) => {
+    setSelectedContact(contact);
+    if (socket && user?._id) {
+      const roomId = [user._id, contact._id].sort().join("_");
+      socket.emit("join-chat", { chatId: roomId, userId: user._id });
+    }
   };
 
   return (
@@ -441,7 +225,7 @@ export default function Chat() {
 
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-2">
-            {isLoading ? (
+            {isLoadingContacts ? (
               <div className="p-4 text-center text-gray-500">
                 Loading contacts...
               </div>
@@ -467,16 +251,6 @@ export default function Chat() {
                       </p>
                     )}
                   </div>
-                  {unreadCounts[contact._id] > 0 && (
-                    <div className="ml-2 flex items-center justify-center">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-red-500 rounded-full animate-pulse"></div>
-                        <Badge className="relative ml-2 bg-red-500 text-white font-bold shadow-lg">
-                          {unreadCounts[contact._id]}
-                        </Badge>
-                      </div>
-                    </div>
-                  )}
                 </button>
               ))
             )}
@@ -543,22 +317,17 @@ export default function Chat() {
                   placeholder="Type a message..."
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  disabled={!isConnected}
+                  disabled={sendMessageMutation.isPending}
                 />
                 <Button
                   type="submit"
                   size="icon"
-                  disabled={!isConnected || !messageInput.trim()}
+                  disabled={sendMessageMutation.isPending || !messageInput.trim()}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
               </form>
-              {!isConnected && (
-                <p className="text-xs text-red-600 mt-2">
-                  Connecting to server...
-                </p>
-              )}
             </div>
           </>
         ) : (

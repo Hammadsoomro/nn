@@ -8,26 +8,19 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect, useRef } from "react";
-import { Trash2, Plus, Copy, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Trash2, Plus, Copy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
-import { io, Socket } from "socket.io-client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function NumbersSorter() {
   const { token, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const [inputNumbers, setInputNumbers] = useState<string>("");
   const [deduplicated, setDeduplicated] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isDeduplicating, setIsDeduplicating] = useState(false);
-  const [queuedCount, setQueuedCount] = useState(0);
-  const [settings, setSettings] = useState({
-    lineCount: 5,
-    cooldownMinutes: 30,
-  });
-  const [savingSettings, setSavingSettings] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -44,83 +37,62 @@ export default function NumbersSorter() {
     }
   }, []);
 
-  // Load settings from server and initialize Socket.IO
-  useEffect(() => {
-    if (!token) return;
+  // Fetch settings
+  const { data: settings = { lineCount: 5, cooldownMinutes: 30 } } = useQuery({
+    queryKey: ["claim-settings"],
+    queryFn: () => apiFetch("/api/claim/settings", { token }),
+    enabled: !!token,
+  });
 
-    const socket = io(window.location.origin, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
+  // Fetch queued lines count
+  const { data: queuedData } = useQuery({
+    queryKey: ["queued"],
+    queryFn: () => apiFetch("/api/queued", { token }),
+    enabled: !!token,
+  });
 
-    socketRef.current = socket;
+  const queuedCount = queuedData?.lines?.length || 0;
 
-    const loadSettings = async () => {
-      try {
-        const response = await fetch("/api/claim/settings", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  // Mutations
+  const addToQueueMutation = useMutation({
+    mutationFn: (lines: string[]) =>
+      apiFetch("/api/queued/add", {
+        method: "POST",
+        body: JSON.stringify({ lines }),
+        token,
+      }),
+    onSuccess: () => {
+      toast.success("Added to queue successfully!");
+      setDeduplicated([]);
+      setInputNumbers("");
+      queryClient.invalidateQueries({ queryKey: ["queued"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to add to queue");
+    }
+  });
 
-        if (response.ok) {
-          const data = await response.json();
-          setSettings({
-            lineCount: data.lineCount || 5,
-            cooldownMinutes: data.cooldownMinutes || 30,
-          });
-        }
-      } catch (error) {
-        console.error("[NumbersSorter] Error loading settings:", error);
-      }
-    };
+  const saveSettingsMutation = useMutation({
+    mutationFn: (newSettings: { lineCount: number; cooldownMinutes: number }) =>
+      apiFetch("/api/claim/settings", {
+        method: "PUT",
+        body: JSON.stringify(newSettings),
+        token,
+      }),
+    onSuccess: () => {
+      toast.success("Settings updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["claim-settings"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update settings");
+    }
+  });
 
-    const loadQueuedCount = async () => {
-      try {
-        const response = await fetch("/api/queued", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setQueuedCount(data.lines?.length || 0);
-        }
-      } catch (error) {
-        console.error("[NumbersSorter] Error loading queued count:", error);
-      }
-    };
-
-    loadSettings();
-    loadQueuedCount();
-
-    // Listen for real-time claim settings updates
-    const handleClaimSettingsUpdated = () => {
-      console.log("[NumbersSorter] Claim settings updated, reloading");
-      loadSettings();
-    };
-
-    const handleLinesQueuedUpdated = () => {
-      console.log("[NumbersSorter] Queued list updated, reloading");
-      loadQueuedCount();
-    };
-
-    socket.on("claim-settings-updated", handleClaimSettingsUpdated);
-    socket.on("lines-queued-updated", handleLinesQueuedUpdated);
-
-    return () => {
-      socket.off("claim-settings-updated", handleClaimSettingsUpdated);
-      socket.off("lines-queued-updated", handleLinesQueuedUpdated);
-      socket.disconnect();
-    };
-  }, [token]);
-
-  // Save to localStorage when input changes
+  // Local Storage Sync
   useEffect(() => {
     localStorage.setItem("sorterInput", inputNumbers);
   }, [inputNumbers]);
 
-  // Save deduplicated lines to localStorage when they change
   useEffect(() => {
     localStorage.setItem("sorterDeduplicated", JSON.stringify(deduplicated));
   }, [deduplicated]);
@@ -141,39 +113,25 @@ export default function NumbersSorter() {
     try {
       setIsDeduplicating(true);
 
-      // Fetch queued lines
-      const queuedResponse = await fetch("/api/queued", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const [queuedResponse, historyResponse] = await Promise.all([
+        apiFetch("/api/queued", { token }),
+        apiFetch("/api/history", { token })
+      ]);
 
-      const queuedData = queuedResponse.ok ? await queuedResponse.json() : {};
       const queuedLines = new Set(
-        (queuedData.lines || []).map((line: any) =>
+        (queuedResponse.lines || []).map((line: any) =>
           line.content.trim().toLowerCase(),
         ),
       );
 
-      // Fetch history entries
-      const historyResponse = await fetch("/api/history", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const historyData = historyResponse.ok
-        ? await historyResponse.json()
-        : {};
       const historyLines = new Set(
-        (historyData.entries || []).map((entry: any) =>
+        (historyResponse.entries || []).map((entry: any) =>
           entry.content.trim().toLowerCase(),
         ),
       );
 
-      // Get first 15 words of each line for comparison
-      const getFirstWords = (text: string) => {
-        return text.split(/\s+/).slice(0, 15).join(" ");
-      };
+      const getFirstWords = (text: string) => text.split(/\s+/).slice(0, 15).join(" ");
 
-      // Deduplicate: keep only first occurrence of each unique set of first 15 words
-      // AND exclude lines that are already in queued list or history
       const seen = new Set<string>();
       const unique: string[] = [];
 
@@ -181,7 +139,6 @@ export default function NumbersSorter() {
         const trimmedLine = line.trim().toLowerCase();
         const key = getFirstWords(trimmedLine);
 
-        // Check if not already seen, and not in queued list or history
         if (
           !seen.has(key) &&
           !queuedLines.has(trimmedLine) &&
@@ -193,7 +150,6 @@ export default function NumbersSorter() {
       });
 
       setDeduplicated(unique);
-
       if (unique.length === 0) {
         toast.info("All lines already exist in Queued List or History");
       } else {
@@ -207,83 +163,36 @@ export default function NumbersSorter() {
     }
   };
 
-  const addToQueue = async () => {
-    if (deduplicated.length === 0) {
-      toast.error("Please deduplicate some lines first");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await apiFetch("/api/queued/add", {
-        method: "POST",
-        body: JSON.stringify({ lines: deduplicated }),
-        token,
-      });
-
-      toast.success("Added to queue successfully!");
-      setDeduplicated([]);
-      setInputNumbers("");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to add to queue",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const clearInput = () => {
     setInputNumbers("");
     setDeduplicated([]);
   };
 
-  const copyToClipboard = async () => {
-    const text = deduplicated.join("\n");
-    try {
-      await navigator.clipboard.writeText(text);
-      alert("Copied to clipboard!");
-    } catch (error) {
-      alert("Failed to copy");
+  const [localSettings, setLocalSettings] = useState({
+    lineCount: 5,
+    cooldownMinutes: 30,
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings(settings);
     }
+  }, [settings]);
+
+  const addToQueue = async () => {
+    if (deduplicated.length === 0) {
+      toast.error("Please deduplicate some lines first");
+      return;
+    }
+    addToQueueMutation.mutate(deduplicated);
   };
 
   const saveSettings = async () => {
-    if (!token || !isAdmin) {
-      toast.error("Admin access required");
-      return;
-    }
-
-    try {
-      setSavingSettings(true);
-      const response = await fetch("/api/claim/settings", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lineCount: Math.max(1, Math.min(100, settings.lineCount)),
-          cooldownMinutes: Math.max(
-            1,
-            Math.min(1440, settings.cooldownMinutes),
-          ),
-        }),
-      });
-
-      if (response.ok) {
-        toast.success("Settings updated successfully!");
-      } else {
-        toast.error("Failed to update settings");
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update settings",
-      );
-    } finally {
-      setSavingSettings(false);
-    }
+    saveSettingsMutation.mutate(localSettings);
   };
+
+  const isLoading = addToQueueMutation.isPending;
+  const savingSettings = saveSettingsMutation.isPending;
 
   return (
     <Layout>
@@ -457,10 +366,10 @@ export default function NumbersSorter() {
                         type="number"
                         min="1"
                         max="100"
-                        value={settings.lineCount}
+                        value={localSettings.lineCount}
                         onChange={(e) =>
-                          setSettings({
-                            ...settings,
+                          setLocalSettings({
+                            ...localSettings,
                             lineCount: parseInt(e.target.value) || 1,
                           })
                         }
@@ -486,10 +395,10 @@ export default function NumbersSorter() {
                         type="number"
                         min="1"
                         max="1440"
-                        value={settings.cooldownMinutes}
+                        value={localSettings.cooldownMinutes}
                         onChange={(e) =>
-                          setSettings({
-                            ...settings,
+                          setLocalSettings({
+                            ...localSettings,
                             cooldownMinutes: parseInt(e.target.value) || 1,
                           })
                         }

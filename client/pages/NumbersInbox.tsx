@@ -6,6 +6,8 @@ import { Clock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 
 interface ClaimedNumber {
   _id: string;
@@ -15,91 +17,65 @@ interface ClaimedNumber {
 }
 
 export default function NumbersInbox() {
-  const { token, user } = useAuth();
-  const [claimedNumbers, setClaimedNumbers] = useState<ClaimedNumber[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [claiming, setClaiming] = useState(false);
-  const [settings, setSettings] = useState({
-    lineCount: 5,
-    cooldownMinutes: 30,
-  });
-  const [canClaim, setCanClaim] = useState(false);
-  const [queuedLinesAvailable, setQueuedLinesAvailable] = useState(true);
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
   const [cooldownTimer, setCooldownTimer] = useState<string>("");
 
   // Fetch claim settings
-  useEffect(() => {
-    const fetchSettings = async () => {
-      if (!token) return;
+  const { data: settings = { lineCount: 5, cooldownMinutes: 30 } } = useQuery({
+    queryKey: ["claim-settings"],
+    queryFn: () => apiFetch("/api/claim/settings", { token }),
+    enabled: !!token,
+  });
 
-      try {
-        const response = await fetch("/api/claim/settings", {
-          headers: { Authorization: `Bearer ${token}` },
+  // Fetch claimed numbers
+  const { data: claimedNumbers = [], isLoading: loadingClaims } = useQuery<ClaimedNumber[]>({
+    queryKey: ["claimed-numbers"],
+    queryFn: () => apiFetch("/api/claim/numbers", { token }),
+    enabled: !!token,
+  });
+
+  // Fetch queued lines count
+  const { data: queuedData } = useQuery({
+    queryKey: ["queued"],
+    queryFn: () => apiFetch("/api/queued", { token }),
+    enabled: !!token,
+  });
+
+  const queuedLinesAvailable = (queuedData?.lines?.length || 0) > 0;
+
+  // Check if can claim
+  const canClaim = !claimedNumbers.some((num: ClaimedNumber) => {
+    return new Date(num.cooldownUntil) > new Date();
+  });
+
+  // Mutations
+  const claimMutation = useMutation({
+    mutationFn: async () => {
+      // Release previous claims if any
+      if (claimedNumbers.length > 0) {
+        await apiFetch("/api/claim/release", {
+          method: "POST",
+          token,
         });
-
-        if (response.ok) {
-          const data = await response.json();
-          setSettings(data);
-        }
-      } catch (error) {
-        console.error("Error fetching settings:", error);
       }
-    };
+      // Claim new numbers
+      return apiFetch("/api/claim", {
+        method: "POST",
+        token,
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["claimed-numbers"] });
+      queryClient.invalidateQueries({ queryKey: ["queued"] });
+      toast.success(`${data.claimedCount} numbers claimed successfully!`);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to claim numbers");
+    }
+  });
 
-    fetchSettings();
-  }, [token]);
-
-  // Fetch claimed numbers and check queued lines availability
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!token) return;
-
-      try {
-        setLoading(true);
-
-        // Fetch claimed numbers
-        const claimResponse = await fetch("/api/claim/numbers", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (claimResponse.ok) {
-          const data = await claimResponse.json();
-          setClaimedNumbers(data);
-
-          // Check if user can claim (no active cooldown)
-          const hasActiveCooldown = data.some((num: ClaimedNumber) => {
-            return new Date(num.cooldownUntil) > new Date();
-          });
-          setCanClaim(!hasActiveCooldown);
-        }
-
-        // Fetch queued lines to check availability
-        const queueResponse = await fetch("/api/queued", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (queueResponse.ok) {
-          const queueData = await queueResponse.json();
-          console.log("Queued lines fetched:", queueData);
-          setQueuedLinesAvailable(
-            Array.isArray(queueData.lines) && queueData.lines.length > 0,
-          );
-        } else {
-          console.error("Failed to fetch queued lines:", queueResponse.status);
-          setQueuedLinesAvailable(false);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setQueuedLinesAvailable(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [token]);
-
-  // Update remaining cooldown time for main button
+  // Update cooldown timer
   useEffect(() => {
     const interval = setInterval(() => {
       if (claimedNumbers.length === 0) {
@@ -107,7 +83,6 @@ export default function NumbersInbox() {
         return;
       }
 
-      // Get the first claimed number's cooldown time
       const firstCooldown = claimedNumbers[0];
       const cooldownTime = new Date(firstCooldown.cooldownUntil);
       const now = new Date();
@@ -115,7 +90,7 @@ export default function NumbersInbox() {
 
       if (diff <= 0) {
         setCooldownTimer("");
-        setCanClaim(true);
+        queryClient.invalidateQueries({ queryKey: ["claimed-numbers"] });
       } else {
         const minutes = Math.floor(diff / 60000);
         const seconds = Math.floor((diff % 60000) / 1000);
@@ -124,43 +99,11 @@ export default function NumbersInbox() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [claimedNumbers]);
+  }, [claimedNumbers, queryClient]);
 
-  const handleClaimNumbers = async () => {
-    if (!token || claiming || !canClaim) return;
-
-    try {
-      setClaiming(true);
-
-      // Release previous claims
-      if (claimedNumbers.length > 0) {
-        await fetch("/api/claim/release", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-
-      // Claim new numbers
-      const response = await fetch("/api/claim", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setClaimedNumbers(data.claimedLines);
-        setCanClaim(false);
-        toast.success(`${data.claimedCount} numbers claimed successfully!`);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to claim numbers");
-      }
-    } catch (error) {
-      console.error("Error claiming numbers:", error);
-      toast.error("Failed to claim numbers");
-    } finally {
-      setClaiming(false);
-    }
+  const handleClaimNumbers = () => {
+    if (!token || claimMutation.isPending || !canClaim) return;
+    claimMutation.mutate();
   };
 
   const formatCooldownDuration = (minutes: number) => {
@@ -272,12 +215,12 @@ export default function NumbersInbox() {
                 return (
                   <Button
                     onClick={handleClaimNumbers}
-                    disabled={isDisabled || claiming || loading}
+                    disabled={isDisabled || claimMutation.isPending || loadingClaims}
                     size="lg"
                     className={`${buttonClass} px-8 py-6 text-lg font-semibold`}
                   >
                     <span className="mr-2">{buttonEmoji}</span>
-                    {claiming ? (
+                    {claimMutation.isPending ? (
                       <>
                         <Clock className="h-5 w-5 mr-2 animate-spin" />
                         Claiming...
@@ -292,7 +235,7 @@ export default function NumbersInbox() {
           </Card>
 
           {/* Claimed Numbers Section */}
-          {loading ? (
+          {loadingClaims ? (
             <Card className="p-8">
               <div className="text-center text-muted-foreground">
                 Loading claimed numbers...
