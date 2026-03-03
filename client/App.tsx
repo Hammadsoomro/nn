@@ -21,7 +21,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NumbersSorter = lazy(() => import("./pages/NumbersSorter"));
 const NumbersInbox = lazy(() => import("./pages/NumbersInbox"));
 const QueuedList = lazy(() => import("./pages/QueuedList"));
-const TeamChat = lazy(() => import("./pages/TeamChat"));
 const History = lazy(() => import("./pages/History"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -43,11 +42,10 @@ const App = () => (
       <ThemeProvider>
         <AuthProvider>
           <SocketProvider>
-            <ChatProvider>
-              <ErrorBoundary>
-                <BrowserRouter>
-                  <Suspense fallback={<PageLoader />}>
-                    <Routes>
+            <ErrorBoundary>
+              <BrowserRouter>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
                       {/* Public Routes */}
                       <Route path="/login" element={<Login />} />
                       <Route path="/signup" element={<Signup />} />
@@ -90,16 +88,6 @@ const App = () => (
                         }
                       />
 
-                      {/* Team Routes */}
-                      <Route
-                        path="/chat"
-                        element={
-                          <ProtectedRoute>
-                            <TeamChat />
-                          </ProtectedRoute>
-                        }
-                      />
-
                       <Route
                         path="/history"
                         element={
@@ -128,7 +116,6 @@ const App = () => (
                   </Suspense>
                 </BrowserRouter>
               </ErrorBoundary>
-            </ChatProvider>
           </SocketProvider>
         </AuthProvider>
       </ThemeProvider>

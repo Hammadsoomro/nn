@@ -8,17 +8,16 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import {
-  BarChart3,
-  Clock,
-  Users,
-  List,
+  MessageSquare,
   TrendingUp,
+  Phone,
+  Users,
+  ShoppingCart,
   ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMemo } from "react";
 import type { User } from "@shared/api";
-import { TeamMemberCard } from "@/components/TeamMemberCard";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
@@ -30,211 +29,177 @@ export default function Dashboard() {
     queryKey: ["members"],
     queryFn: () => apiFetch("/api/members", { token }),
     enabled: !!token,
-    staleTime: 30000, // 30 seconds
-  });
-
-  // Fetch queued lines count
-  const { data: queuedData, isLoading: loadingQueued } = useQuery({
-    queryKey: ["queued"],
-    queryFn: () => apiFetch("/api/queued", { token }),
-    enabled: !!token,
     staleTime: 30000,
   });
 
-  // Fetch claimed numbers count for today
-  const { data: claimedNumbers = [], isLoading: loadingClaimed } = useQuery({
-    queryKey: ["claimed-numbers"],
-    queryFn: () => apiFetch("/api/claim/numbers", { token }),
-    enabled: !!token && !isAdmin,
-    staleTime: 30000,
-  });
+  const stats = [
+    {
+      label: "Total Conversations",
+      value: "0",
+      description: "All time conversations",
+      trend: "↑ 12% from last week",
+      icon: MessageSquare,
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+    },
+    {
+      label: "Active Conversations",
+      value: "0",
+      description: "Ongoing chats",
+      icon: TrendingUp,
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+    },
+    {
+      label: "Phone Numbers",
+      value: "0",
+      description: "Active numbers",
+      icon: Phone,
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+    },
+    {
+      label: "Team Members",
+      value: teamMembers.length.toString(),
+      description: "Active users",
+      icon: Users,
+      color: "text-rose-500",
+      bgColor: "bg-rose-50",
+    },
+  ];
 
-  const stats = useMemo(() => {
-    const membersCount = teamMembers.length;
-    const queuedCount = queuedData?.lines?.length || 0;
-
-    let claimsToday = 0;
-    if (isAdmin) {
-      claimsToday = teamMembers.reduce((total, member) => total + (member.claimsToday || 0), 0);
-    } else {
-      claimsToday = Array.isArray(claimedNumbers) ? claimedNumbers.length : 0;
-    }
-
-    return [
-      {
-        label: "Team Members",
-        value: membersCount.toString(),
-        icon: Users,
-        color: "text-blue-500",
-        bgColor: "bg-blue-500/10",
-      },
-      {
-        label: "Lines Queued",
-        value: queuedCount.toString(),
-        icon: List,
-        color: "text-purple-500",
-        bgColor: "bg-purple-500/10",
-      },
-      {
-        label: "Today's Claim",
-        value: claimsToday.toString(),
-        icon: TrendingUp,
-        color: "text-green-500",
-        bgColor: "bg-green-500/10",
-      },
-    ];
-  }, [teamMembers, queuedData, claimedNumbers, isAdmin]);
-
-  const loading = loadingMembers || loadingQueued || (loadingClaimed && !isAdmin);
-
-  const quickLinks = isAdmin
-    ? [
-        {
-          title: "Numbers Sorter",
-          description: "Add and deduplicate numbers",
-          icon: BarChart3,
-          path: "/sorter",
-        },
-        {
-          title: "Queued List",
-          description: "Manage queued numbers",
-          icon: List,
-          path: "/queued",
-        },
-        {
-          title: "Team Management",
-          description: "Manage team members",
-          icon: Users,
-          path: "/settings",
-        },
-      ]
-    : [
-        {
-          title: "Numbers Inbox",
-          description: "Claim your numbers",
-          icon: Clock,
-          path: "/inbox",
-        },
-        {
-          title: "Team Chat",
-          description: "Connect with your team",
-          icon: Users,
-          path: "/chat",
-        },
-        {
-          title: "History",
-          description: "View your claimed numbers",
-          icon: TrendingUp,
-          path: "/history",
-        },
-      ];
+  const quickActions = [
+    {
+      title: "View Conversations",
+      description: "Manage your message threads",
+      icon: MessageSquare,
+      path: "/chat",
+      iconColor: "text-rose-500",
+      iconBg: "bg-rose-50",
+    },
+    {
+      title: "Buy Phone Numbers",
+      description: "Add new numbers to your account",
+      icon: Phone,
+      path: "/sorter",
+      iconColor: "text-teal-500",
+      iconBg: "bg-teal-50",
+    },
+    {
+      title: "Manage Team",
+      description: "Add or manage team members",
+      icon: Users,
+      path: "/settings",
+      iconColor: "text-emerald-500",
+      iconBg: "bg-emerald-50",
+    },
+  ];
 
   return (
     <Layout>
-      <div className="min-h-screen p-4 md:p-6 bg-transparent">
-        <div className="max-w-7xl mx-auto space-y-4">
-          {/* Header */}
-          <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              Welcome back, {user?.name}! 👋
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {isAdmin
-                ? "Manage your team and track your numbers"
-                : "Check your inbox and collaborate with your team"}
-            </p>
-          </div>
+      <div className="p-6 md:p-10 max-w-[1600px] mx-auto space-y-8">
+        {/* Header */}
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Welcome back! Here's an overview of your messaging platform.
+          </p>
+        </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Card
-                  key={index}
-                  className="border-border/50 hover:shadow-md transition-shadow"
-                >
-                  <CardContent className="pt-4 pb-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={index} className="border-border/40 shadow-sm overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">
                           {stat.label}
-                        </span>
-                        <div className={`${stat.bgColor} p-1.5 rounded-lg`}>
-                          <Icon className={`h-3 w-3 ${stat.color}`} />
-                        </div>
+                        </p>
+                        <p className="text-4xl font-extrabold text-foreground">
+                          {stat.value}
+                        </p>
                       </div>
-                      <p className="text-xl font-bold text-foreground">
-                        {stat.value}
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground">
+                          {stat.description}
+                        </p>
+                        {stat.trend && (
+                          <p className="text-xs font-bold text-emerald-600">
+                            {stat.trend}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                    <div className={`${stat.bgColor} p-3 rounded-xl`}>
+                      <Icon className={`h-6 w-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
-          {/* Quick Links Section */}
-          <div>
-            <h2 className="text-lg font-bold text-foreground mb-3">
-              Quick Links
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {quickLinks.map((link, index) => {
-                const Icon = link.icon;
+        {/* Main Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Recent Activity */}
+          <Card className="lg:col-span-2 border-border/40 shadow-sm min-h-[400px]">
+            <CardHeader className="p-6 pb-2">
+              <CardTitle className="text-2xl font-bold">Recent Activity</CardTitle>
+              <CardDescription className="text-sm">
+                Latest messaging activity on your platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 flex flex-col items-center justify-center h-full space-y-4 opacity-60">
+              <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
+                <MessageSquare className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="font-bold text-foreground">No recent activity</p>
+                <p className="text-sm text-muted-foreground">
+                  Start conversations to see activity here
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card className="border-border/40 shadow-sm">
+            <CardHeader className="p-6 pb-2">
+              <CardTitle className="text-2xl font-bold">Quick Actions</CardTitle>
+              <CardDescription className="text-sm">
+                Common tasks you can perform
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {quickActions.map((action, index) => {
+                const Icon = action.icon;
                 return (
-                  <Link key={index} to={link.path}>
-                    <Card className="h-full border-border/50 hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer group">
-                      <CardContent className="pt-4 pb-4">
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-0.5 flex-1">
-                              <CardTitle className="text-base group-hover:text-primary transition-colors">
-                                {link.title}
-                              </CardTitle>
-                              <CardDescription className="text-xs">
-                                {link.description}
-                              </CardDescription>
-                            </div>
-                            <Icon className="h-5 w-5 text-primary/60 group-hover:text-primary transition-colors flex-shrink-0 ml-2" />
-                          </div>
-                          <div className="flex items-center gap-1 text-primary text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                            Visit <ArrowRight className="h-3 w-3" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  <Link key={index} to={action.path}>
+                    <div className="group flex items-center p-4 rounded-xl bg-muted/40 hover:bg-muted/70 transition-all cursor-pointer border border-transparent hover:border-border/60 mb-3">
+                      <div className={`${action.iconBg} p-3 rounded-xl mr-4 flex-shrink-0 transition-transform group-hover:scale-110`}>
+                        <Icon className={`h-6 w-6 ${action.iconColor}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-foreground text-base leading-snug">
+                          {action.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {action.description}
+                        </p>
+                      </div>
+                    </div>
                   </Link>
                 );
               })}
-            </div>
-          </div>
-
-          {/* Team Members Section */}
-          <div>
-            <h2 className="text-lg font-bold text-foreground mb-3">
-              Team Members
-            </h2>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Loading team members...</p>
-              </div>
-            ) : teamMembers.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No team members yet</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {teamMembers.map((member, index) => (
-                  <TeamMemberCard
-                    key={member._id}
-                    member={member}
-                    index={index}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>
