@@ -11,16 +11,39 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
 import { Trash2, Plus, Copy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function NumbersSorter() {
   const { token, isAdmin } = useAuth();
+  const { socket } = useSocket();
   const queryClient = useQueryClient();
   const [inputNumbers, setInputNumbers] = useState<string>("");
   const [deduplicated, setDeduplicated] = useState<string[]>([]);
   const [isDeduplicating, setIsDeduplicating] = useState(false);
+
+  // Listen for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const invalidateQueued = () => {
+      queryClient.invalidateQueries({ queryKey: ["queued"] });
+    };
+
+    const invalidateSettings = () => {
+      queryClient.invalidateQueries({ queryKey: ["claim-settings"] });
+    };
+
+    socket.on("lines-queued-updated", invalidateQueued);
+    socket.on("claim-settings-updated", invalidateSettings);
+
+    return () => {
+      socket.off("lines-queued-updated", invalidateQueued);
+      socket.off("claim-settings-updated", invalidateSettings);
+    };
+  }, [socket, queryClient]);
 
   // Load from localStorage on mount
   useEffect(() => {

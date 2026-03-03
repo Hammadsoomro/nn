@@ -4,6 +4,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   ReactNode,
 } from "react";
 import type { User, AuthResponse, UserRole } from "@shared/api";
@@ -110,16 +111,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("user");
   }, []);
 
-  const value: AuthContextType = {
-    user,
-    token,
-    isLoading,
-    login,
-    signup,
-    logout,
-    isAuthenticated: !!user && !!token,
-    isAdmin: user?.role === "admin",
-  };
+  const value: AuthContextType = useMemo(
+    () => ({
+      user,
+      token,
+      isLoading,
+      login,
+      signup,
+      logout,
+      isAuthenticated: !!user && !!token,
+      isAdmin: user?.role === "admin",
+    }),
+    [user, token, isLoading, login, signup, logout],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
