@@ -19,7 +19,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { ThemeSelector } from "@/components/ThemeSelector";
 import { ModernSidebar } from "@/components/ModernSidebar";
 import { io, Socket } from "socket.io-client";
 
@@ -97,9 +96,6 @@ export const Layout = ({ children }: LayoutProps) => {
 
               {/* Right */}
               <div className="flex items-center gap-3">
-                {/* Theme Selector */}
-                <ThemeSelector />
-
                 {/* Theme Toggle */}
                 <button
                   onClick={toggleTheme}
