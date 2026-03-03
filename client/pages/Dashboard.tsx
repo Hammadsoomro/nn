@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import {
   BarChart3,
   Clock,
@@ -16,14 +17,43 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import type { User } from "@shared/api";
 import { TeamMemberCard } from "@/components/TeamMemberCard";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
 export default function Dashboard() {
   const { user, isAdmin, token } = useAuth();
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  // Listen for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const invalidateQueued = () => {
+      queryClient.invalidateQueries({ queryKey: ["queued"] });
+    };
+
+    const invalidateClaims = () => {
+      queryClient.invalidateQueries({ queryKey: ["claimed-numbers"] });
+    };
+
+    const invalidateMembers = () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    };
+
+    socket.on("lines-queued-updated", invalidateQueued);
+    socket.on("claimed-today-updated", invalidateClaims);
+    socket.on("team-members-updated", invalidateMembers);
+
+    return () => {
+      socket.off("lines-queued-updated", invalidateQueued);
+      socket.off("claimed-today-updated", invalidateClaims);
+      socket.off("team-members-updated", invalidateMembers);
+    };
+  }, [socket, queryClient]);
 
   // Fetch team members
   const { data: teamMembers = [], isLoading: loadingMembers } = useQuery<User[]>({

@@ -24,17 +24,17 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Create socket connection without auth header (socket.io uses its own auth mechanism)
-    // In serverless environments, this might fail, so we handle it gracefully
+    // Create socket connection with auth token
     let newSocket: Socket | null = null;
     try {
       newSocket = io(window.location.origin, {
+        auth: { token },
         transports: ["websocket", "polling"],
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
-        reconnectionAttempts: 3, // Reduced for serverless to fail faster
-        timeout: 5000,
+        reconnectionAttempts: 5,
+        timeout: 10000,
       });
 
       newSocket.on("connect", () => {

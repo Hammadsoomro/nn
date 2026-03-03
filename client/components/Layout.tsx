@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useSocket } from "@/context/SocketContext";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,7 +21,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { ModernSidebar } from "@/components/ModernSidebar";
-import { io, Socket } from "socket.io-client";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,6 +29,7 @@ interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
   const { user, logout, token } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { socket } = useSocket();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -36,32 +37,12 @@ export const Layout = ({ children }: LayoutProps) => {
     }
     return false;
   });
-  const socketRef = useRef<Socket | null>(null);
 
   const toggleCollapse = () => {
     const newValue = !isCollapsed;
     setIsCollapsed(newValue);
     localStorage.setItem("sidebarCollapsed", String(newValue));
   };
-
-  // Initialize WebSocket
-  useEffect(() => {
-    if (!token) return;
-
-    const socket = io(window.location.origin, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
-
-    socketRef.current = socket;
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [token]);
 
   return (
     <>

@@ -39,10 +39,12 @@ export async function connectDB(): Promise<Db> {
 
     const queuedCollection = db.collection("queuedLines");
     await queuedCollection.createIndex({ teamId: 1 });
+    await queuedCollection.createIndex({ content: 1 });
     await queuedCollection.createIndex({ addedAt: -1 });
 
     const historyCollection = db.collection("history");
     await historyCollection.createIndex({ teamId: 1 });
+    await historyCollection.createIndex({ content: 1 });
     await historyCollection.createIndex({ claimedBy: 1 });
     await historyCollection.createIndex({ claimedAt: -1 });
 

@@ -1,88 +1,79 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils";
 import { List, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { io, Socket } from "socket.io-client";
+import { useSocket } from "@/context/SocketContext";
 import type { QueuedLine } from "@shared/api";
 
 const ITEMS_PER_PAGE = 100;
 
 export default function QueuedList() {
   const { token, isAdmin } = useAuth();
+  const { socket } = useSocket();
   const [lines, setLines] = useState<QueuedLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const socketRef = useRef<Socket | null>(null);
 
-  // Initialize Socket.IO connection for real-time updates
-  useEffect(() => {
+  const fetchQueued = async (showLoading = false) => {
     if (!token) return;
+    try {
+      if (showLoading) setLoading(true);
+      setError(null);
+      const response = await fetch("/api/queued", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const socket = io(window.location.origin, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
-
-    socketRef.current = socket;
-
-    // Fetch initial queued lines
-    const fetchQueued = async () => {
-      try {
-        setLoading(true);
+      if (response.ok) {
+        const data = await response.json();
+        setLines(data.lines || []);
         setError(null);
-        const response = await fetch("/api/queued", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setLines(data.lines || []);
-          setError(null);
-        } else {
-          const errorText = await response.text();
-          console.error(
-            "[QueuedList] Fetch error:",
-            response.status,
-            errorText,
-          );
-          setError(
-            `Failed to load queued lines (${response.status}). Please try again.`,
-          );
-        }
-      } catch (error) {
-        console.error("[QueuedList] Error fetching queued lines:", error);
-        setError(
-          "Failed to load queued lines. Please check your connection and try again.",
+      } else {
+        const errorText = await response.text();
+        console.error(
+          "[QueuedList] Fetch error:",
+          response.status,
+          errorText,
         );
-      } finally {
-        setLoading(false);
+        setError(
+          `Failed to load queued lines (${response.status}). Please try again.`,
+        );
       }
-    };
+    } catch (error) {
+      console.error("[QueuedList] Error fetching queued lines:", error);
+      setError(
+        "Failed to load queued lines. Please check your connection and try again.",
+      );
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
 
-    fetchQueued();
+  // Initial fetch
+  useEffect(() => {
+    fetchQueued(true);
+  }, [token]);
 
-    // Listen for real-time updates
+  // Listen for real-time updates via global socket
+  useEffect(() => {
+    if (!socket) return;
+
     const handleLinesQueued = (data: { count: number }) => {
       console.log("[QueuedList] Lines queued updated:", data.count);
-      // Re-fetch the list to get the updated data
-      fetchQueued();
+      // Re-fetch the list without showing a loading spinner
+      fetchQueued(false);
     };
 
     socket.on("lines-queued-updated", handleLinesQueued);
 
     return () => {
       socket.off("lines-queued-updated", handleLinesQueued);
-      socket.disconnect();
     };
-  }, [token]);
+  }, [socket, token]);
 
   // Reset to first page when lines change
   useEffect(() => {

@@ -3,7 +3,7 @@ import express from "express";
 import cors, { CorsOptions } from "cors";
 import { handleDemo } from "./routes/demo";
 import { handleLogin, handleSignup } from "./routes/auth";
-import { addToQueue, getQueuedLines, clearQueuedLine } from "./routes/queued";
+import { addToQueue, getQueuedLines, clearQueuedLine, deduplicateLines } from "./routes/queued";
 import { addToHistory, getHistory, searchHistory } from "./routes/history";
 import { createTeamMember, getTeamMembers } from "./routes/members";
 import {
@@ -56,8 +56,6 @@ export async function createServer() {
   };
 
   app.use(cors(corsOptions));
-  // Explicitly handle OPTIONS requests
-  app.options("*", cors(corsOptions));
 
   // Request logger
   app.use((req, res, next) => {
@@ -98,6 +96,7 @@ export async function createServer() {
   app.post("/api/queued/add", authMiddleware, addToQueue);
   app.get("/api/queued", authMiddleware, getQueuedLines);
   app.delete("/api/queued/:lineId", authMiddleware, clearQueuedLine);
+  app.post("/api/queued/deduplicate", authMiddleware, deduplicateLines);
 
   // History routes (protected)
   app.post("/api/history/add", authMiddleware, addToHistory);

@@ -132,7 +132,7 @@ async function startServer() {
     });
 
     // Handle React Router - serve index.html for all non-API routes
-    app.get("/*splat", (req, res) => {
+    app.get("(.*)", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
 

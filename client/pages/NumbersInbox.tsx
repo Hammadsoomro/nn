@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,8 +19,30 @@ interface ClaimedNumber {
 
 export default function NumbersInbox() {
   const { token } = useAuth();
+  const { socket } = useSocket();
   const queryClient = useQueryClient();
   const [cooldownTimer, setCooldownTimer] = useState<string>("");
+
+  // Listen for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const invalidateSettings = () => {
+      queryClient.invalidateQueries({ queryKey: ["claim-settings"] });
+    };
+
+    const invalidateQueued = () => {
+      queryClient.invalidateQueries({ queryKey: ["queued"] });
+    };
+
+    socket.on("claim-settings-updated", invalidateSettings);
+    socket.on("lines-queued-updated", invalidateQueued);
+
+    return () => {
+      socket.off("claim-settings-updated", invalidateSettings);
+      socket.off("lines-queued-updated", invalidateQueued);
+    };
+  }, [socket, queryClient]);
 
   // Fetch claim settings
   const { data: settings = { lineCount: 5, cooldownMinutes: 30 } } = useQuery({
@@ -52,14 +75,7 @@ export default function NumbersInbox() {
   // Mutations
   const claimMutation = useMutation({
     mutationFn: async () => {
-      // Release previous claims if any
-      if (claimedNumbers.length > 0) {
-        await apiFetch("/api/claim/release", {
-          method: "POST",
-          token,
-        });
-      }
-      // Claim new numbers
+      // Claim new numbers (automatically releases previous ones on server)
       return apiFetch("/api/claim", {
         method: "POST",
         token,

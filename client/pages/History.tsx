@@ -1,90 +1,82 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Clock, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { formatDateTime } from "@/lib/utils";
-import { io, Socket } from "socket.io-client";
 import type { HistoryEntry } from "@shared/api";
 
 const ITEMS_PER_PAGE = 100;
 
 export default function History() {
   const { token, user, isAdmin } = useAuth();
+  const { socket } = useSocket();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredEntries, setFilteredEntries] = useState<HistoryEntry[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const socketRef = useRef<Socket | null>(null);
 
-  // Initialize Socket.IO connection for real-time updates
-  useEffect(() => {
+  const fetchHistory = async (showLoading = false) => {
     if (!token) return;
+    try {
+      if (showLoading) setLoading(true);
+      setError(null);
+      const response = await fetch("/api/history", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const socket = io(window.location.origin, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
-
-    socketRef.current = socket;
-
-    // Fetch initial history entries
-    const fetchHistory = async () => {
-      try {
-        setLoading(true);
+      if (response.ok) {
+        const data = await response.json();
+        setEntries(data.entries || []);
+        setFilteredEntries(data.entries || []);
         setError(null);
-        const response = await fetch("/api/history", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setEntries(data.entries || []);
-          setFilteredEntries(data.entries || []);
-          setError(null);
-        } else {
-          const errorText = await response.text();
-          console.error(
-            "[History] Fetch error:",
-            response.status,
-            errorText,
-          );
-          setError(
-            `Failed to load history (${response.status}). Please try again.`,
-          );
-        }
-      } catch (error) {
-        console.error("[History] Error fetching history:", error);
-        setError(
-          "Failed to load history. Please check your connection and try again.",
+      } else {
+        const errorText = await response.text();
+        console.error(
+          "[History] Fetch error:",
+          response.status,
+          errorText,
         );
-      } finally {
-        setLoading(false);
+        setError(
+          `Failed to load history (${response.status}). Please try again.`,
+        );
       }
-    };
+    } catch (error) {
+      console.error("[History] Error fetching history:", error);
+      setError(
+        "Failed to load history. Please check your connection and try again.",
+      );
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
 
-    fetchHistory();
+  // Initial fetch
+  useEffect(() => {
+    fetchHistory(true);
+  }, [token]);
 
-    // Listen for real-time updates when new lines are claimed
+  // Listen for real-time updates when new lines are claimed
+  useEffect(() => {
+    if (!socket) return;
+
     const handleClaimedTodayUpdated = () => {
       console.log("[History] Claimed today updated, refreshing history");
-      fetchHistory();
+      // Refresh history without full loading state
+      fetchHistory(false);
     };
 
     socket.on("claimed-today-updated", handleClaimedTodayUpdated);
 
     return () => {
       socket.off("claimed-today-updated", handleClaimedTodayUpdated);
-      socket.disconnect();
     };
-  }, [token]);
+  }, [socket, token]);
 
   // Filter entries based on search (searches ALL entries, not just current page)
   useEffect(() => {
