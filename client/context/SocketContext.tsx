@@ -25,36 +25,40 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Create socket connection without auth header (socket.io uses its own auth mechanism)
-    const newSocket = io(window.location.origin, {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-    });
+    // In serverless environments, this might fail, so we handle it gracefully
+    let newSocket: Socket | null = null;
+    try {
+      newSocket = io(window.location.origin, {
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 3, // Reduced for serverless to fail faster
+        timeout: 5000,
+      });
 
-    newSocket.on("connect", () => {
-      console.log("[Socket.IO] Connected:", newSocket.id);
-      setIsConnected(true);
-    });
+      newSocket.on("connect", () => {
+        console.log("[Socket.IO] Connected:", newSocket?.id);
+        setIsConnected(true);
+      });
 
-    newSocket.on("disconnect", (reason) => {
-      console.log("[Socket.IO] Disconnected:", reason);
-      setIsConnected(false);
-    });
+      newSocket.on("disconnect", (reason) => {
+        console.log("[Socket.IO] Disconnected:", reason);
+        setIsConnected(false);
+      });
 
-    newSocket.on("connect_error", (error) => {
-      console.error("[Socket.IO] Connection error:", error);
-    });
+      newSocket.on("connect_error", (error) => {
+        console.warn("[Socket.IO] Connection error (expected in serverless):", error.message);
+        setIsConnected(false);
+      });
 
-    newSocket.on("error", (error) => {
-      console.error("[Socket.IO] Error:", error);
-    });
-
-    setSocket(newSocket);
+      setSocket(newSocket);
+    } catch (err) {
+      console.warn("[Socket.IO] Initialization failed (expected in serverless):", err);
+    }
 
     return () => {
-      newSocket.close();
+      if (newSocket) newSocket.close();
     };
   }, [token, user]);
 
