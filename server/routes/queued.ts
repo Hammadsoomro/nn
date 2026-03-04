@@ -22,7 +22,64 @@ export const addToQueue: RequestHandler = async (req, res) => {
 
     const collections = getCollections();
 
-    const linesToInsert = validated.lines.map((content) => ({
+    // Perform a final duplicate check before adding to queue
+    const inputLines = validated.lines.map((l) => l.trim()).filter((l) => l);
+    if (inputLines.length === 0) {
+      res.status(400).json({ error: "No valid lines to add" });
+      return;
+    }
+
+    const inputLinesLower = inputLines.map((l) => l.toLowerCase());
+
+    // Check existing in queued and history
+    const existingQueued = await collections.queuedLines
+      .find({
+        teamId,
+        content: { $in: inputLines },
+      })
+      .project({ content: 1 })
+      .toArray();
+
+    const existingHistory = await collections.history
+      .find({
+        teamId,
+        content: { $in: inputLines },
+      })
+      .project({ content: 1 })
+      .toArray();
+
+    const queuedSet = new Set(
+      existingQueued.map((l) => l.content.toLowerCase()),
+    );
+    const historySet = new Set(
+      existingHistory.map((l) => l.content.toLowerCase()),
+    );
+
+    const uniqueLines: string[] = [];
+    const localSeen = new Set<string>();
+
+    inputLines.forEach((line) => {
+      const lowerLine = line.toLowerCase();
+      if (
+        !localSeen.has(lowerLine) &&
+        !queuedSet.has(lowerLine) &&
+        !historySet.has(lowerLine)
+      ) {
+        localSeen.add(lowerLine);
+        uniqueLines.push(line);
+      }
+    });
+
+    if (uniqueLines.length === 0) {
+      res.json({
+        success: true,
+        count: 0,
+        message: "All lines were already in the queue or history",
+      });
+      return;
+    }
+
+    const linesToInsert = uniqueLines.map((content) => ({
       content,
       addedBy: userId,
       addedAt: new Date().toISOString(),
@@ -41,7 +98,11 @@ export const addToQueue: RequestHandler = async (req, res) => {
       });
     }
 
-    res.json({ success: true, count: result.insertedCount });
+    res.json({
+      success: true,
+      count: result.insertedCount,
+      skipped: inputLines.length - uniqueLines.length,
+    });
   } catch (error) {
     console.error("Add to queue error:", error);
     res.status(400).json({ error: "Invalid request" });

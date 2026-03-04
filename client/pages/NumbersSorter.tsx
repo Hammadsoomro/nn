@@ -95,8 +95,18 @@ export default function NumbersSorter() {
         body: JSON.stringify({ lines }),
         token,
       }),
-    onSuccess: () => {
-      toast.success("Added to queue successfully!");
+    onSuccess: (data) => {
+      const added = data.count || 0;
+      const skipped = data.skipped || 0;
+
+      if (added > 0) {
+        toast.success(`Added ${added} to queue! ${skipped > 0 ? `Skipped ${skipped} duplicates.` : ""}`);
+      } else if (skipped > 0) {
+        toast.info(`All ${skipped} lines skipped (already in queue/history).`);
+      } else {
+        toast.info("No lines were added.");
+      }
+
       setDeduplicated([]);
       setInputNumbers("");
       queryClient.invalidateQueries({ queryKey: ["queued"] });
