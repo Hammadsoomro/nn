@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { z } from "zod";
 import type { QueuedLine } from "@shared/api";
 import { getCollections } from "../db";
-import { getIO } from "../websocket-io";
+import { getIO } from "../ably";
 import { ObjectId } from "mongodb";
 
 export const addToQueue: RequestHandler = async (req, res) => {

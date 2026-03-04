@@ -35,7 +35,6 @@ export default defineConfig({
         "mongodb",
         "serverless-http",
         "zod",
-        "socket.io",
       ],
       output: {
         format: "es",
