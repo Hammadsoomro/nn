@@ -63,23 +63,33 @@ export default function QueuedList() {
   useEffect(() => {
     if (!socket) return;
 
+    let timeoutId: NodeJS.Timeout;
+
     const handleLinesQueued = (data: { count: number }) => {
       console.log("[QueuedList] Lines queued updated:", data.count);
-      // Re-fetch the list without showing a loading spinner
-      fetchQueued(false);
+      // Debounce re-fetch to prevent excessive updates
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fetchQueued(false);
+      }, 500); // Wait 500ms before fetching
     };
 
     socket.on("lines-queued-updated", handleLinesQueued);
 
     return () => {
       socket.off("lines-queued-updated", handleLinesQueued);
+      clearTimeout(timeoutId);
     };
   }, [socket, token]);
 
-  // Reset to first page when lines change
+  // Adjust current page if it's now out of bounds after lines change
+  // (We no longer automatically reset to page 1 to prevent annoying jumps)
   useEffect(() => {
-    setCurrentPage(1);
-  }, [lines]);
+    const totalPages = Math.ceil(lines.length / ITEMS_PER_PAGE);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [lines.length, currentPage]);
 
   const handleDeleteLine = async (lineId: string) => {
     if (!token) return;
