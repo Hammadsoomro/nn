@@ -16,6 +16,7 @@ export default function QueuedList() {
   const [lines, setLines] = useState<QueuedLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingAll, setClearingAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,11 +93,38 @@ export default function QueuedList() {
 
       if (response.ok) {
         setLines(lines.filter((line) => line._id !== lineId));
+      } else {
+        const errorData = await response.json();
+        console.error("Delete failed:", errorData.error);
       }
     } catch (error) {
       console.error("Error deleting line:", error);
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!token || !isAdmin) return;
+    if (!confirm("Are you sure you want to clear the entire queued list?")) return;
+
+    try {
+      setClearingAll(true);
+      const response = await fetch("/api/queued", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        setLines([]);
+      } else {
+        const errorData = await response.json();
+        console.error("Clear all failed:", errorData.error);
+      }
+    } catch (error) {
+      console.error("Error clearing queued list:", error);
+    } finally {
+      setClearingAll(false);
     }
   };
 
@@ -160,11 +188,25 @@ export default function QueuedList() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <List className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">
-                Queued List
-              </h1>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+              <div className="flex items-center gap-3">
+                <List className="h-8 w-8 text-primary" />
+                <h1 className="text-3xl font-bold text-foreground">
+                  Queued List
+                </h1>
+              </div>
+              {isAdmin && lines.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleClearAll}
+                  disabled={clearingAll}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {clearingAll ? "Clearing..." : "Clear Queued List"}
+                </Button>
+              )}
             </div>
             <p className="text-muted-foreground">
               View and manage numbers waiting to be claimed by team members
