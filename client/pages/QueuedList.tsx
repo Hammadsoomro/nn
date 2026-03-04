@@ -289,9 +289,6 @@ export default function QueuedList() {
                           <p className="font-semibold text-foreground text-lg">
                             {line.content}
                           </p>
-                          <p className="text-sm text-muted-foreground">
-                            Added by: {line.addedBy}
-                          </p>
                           <p className="text-xs text-muted-foreground/70">
                             {formatDateTime(line.addedAt)}
                           </p>
