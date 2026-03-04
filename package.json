@@ -22,12 +22,11 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "ably": "^2.19.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "mongodb": "^7.0.0",
     "serverless-http": "^3.2.0",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
