@@ -18,20 +18,22 @@ interface ClaimedNumber {
 }
 
 export default function NumbersInbox() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
   const [cooldownTimer, setCooldownTimer] = useState<string>("");
 
   // Listen for real-time updates
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user?.teamId) return;
 
-    const invalidateSettings = () => {
+    const invalidateSettings = (data: { teamId?: string }) => {
+      if (data.teamId && data.teamId !== user.teamId) return;
       queryClient.invalidateQueries({ queryKey: ["claim-settings"] });
     };
 
-    const invalidateQueued = () => {
+    const invalidateQueued = (data: { teamId?: string }) => {
+      if (data.teamId && data.teamId !== user.teamId) return;
       queryClient.invalidateQueries({ queryKey: ["queued"] });
     };
 
@@ -42,7 +44,7 @@ export default function NumbersInbox() {
       socket.off("claim-settings-updated", invalidateSettings);
       socket.off("lines-queued-updated", invalidateQueued);
     };
-  }, [socket, queryClient]);
+  }, [socket, queryClient, user?.teamId]);
 
   // Fetch claim settings
   const { data: settings = { lineCount: 5, cooldownMinutes: 30 } } = useQuery({

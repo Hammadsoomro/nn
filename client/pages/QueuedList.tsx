@@ -11,11 +11,12 @@ import type { QueuedLine } from "@shared/api";
 const ITEMS_PER_PAGE = 100;
 
 export default function QueuedList() {
-  const { token, isAdmin } = useAuth();
+  const { token, isAdmin, user } = useAuth();
   const { socket } = useSocket();
   const [lines, setLines] = useState<QueuedLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingAll, setClearingAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,25 +61,38 @@ export default function QueuedList() {
 
   // Listen for real-time updates via global socket
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user?.teamId) return;
 
-    const handleLinesQueued = (data: { count: number }) => {
+    let timeoutId: NodeJS.Timeout;
+
+    const handleLinesQueued = (data: { count: number; teamId?: string }) => {
+      // Only process updates for the current user's team
+      if (data.teamId && data.teamId !== user.teamId) return;
+
       console.log("[QueuedList] Lines queued updated:", data.count);
-      // Re-fetch the list without showing a loading spinner
-      fetchQueued(false);
+      // Debounce re-fetch to prevent excessive updates
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fetchQueued(false);
+      }, 500); // Wait 500ms before fetching
     };
 
     socket.on("lines-queued-updated", handleLinesQueued);
 
     return () => {
       socket.off("lines-queued-updated", handleLinesQueued);
+      clearTimeout(timeoutId);
     };
-  }, [socket, token]);
+  }, [socket, token, user?.teamId]);
 
-  // Reset to first page when lines change
+  // Adjust current page if it's now out of bounds after lines change
+  // (We no longer automatically reset to page 1 to prevent annoying jumps)
   useEffect(() => {
-    setCurrentPage(1);
-  }, [lines]);
+    const totalPages = Math.ceil(lines.length / ITEMS_PER_PAGE);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [lines.length, currentPage]);
 
   const handleDeleteLine = async (lineId: string) => {
     if (!token) return;
@@ -92,11 +106,38 @@ export default function QueuedList() {
 
       if (response.ok) {
         setLines(lines.filter((line) => line._id !== lineId));
+      } else {
+        const errorData = await response.json();
+        console.error("Delete failed:", errorData.error);
       }
     } catch (error) {
       console.error("Error deleting line:", error);
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!token || !isAdmin) return;
+    if (!confirm("Are you sure you want to clear the entire queued list?")) return;
+
+    try {
+      setClearingAll(true);
+      const response = await fetch("/api/queued", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        setLines([]);
+      } else {
+        const errorData = await response.json();
+        console.error("Clear all failed:", errorData.error);
+      }
+    } catch (error) {
+      console.error("Error clearing queued list:", error);
+    } finally {
+      setClearingAll(false);
     }
   };
 
@@ -160,11 +201,25 @@ export default function QueuedList() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <List className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">
-                Queued List
-              </h1>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+              <div className="flex items-center gap-3">
+                <List className="h-8 w-8 text-primary" />
+                <h1 className="text-3xl font-bold text-foreground">
+                  Queued List
+                </h1>
+              </div>
+              {isAdmin && lines.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleClearAll}
+                  disabled={clearingAll}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {clearingAll ? "Clearing..." : "Clear Queued List"}
+                </Button>
+              )}
             </div>
             <p className="text-muted-foreground">
               View and manage numbers waiting to be claimed by team members
@@ -233,9 +288,6 @@ export default function QueuedList() {
                         <div>
                           <p className="font-semibold text-foreground text-lg">
                             {line.content}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Added by: {line.addedBy}
                           </p>
                           <p className="text-xs text-muted-foreground/70">
                             {formatDateTime(line.addedAt)}

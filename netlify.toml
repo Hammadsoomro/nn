@@ -1,22 +1,17 @@
 [build]
-  command = "pnpm run build"
-  functions = "netlify/functions"
+  command = "npm run build"
   publish = "dist/spa"
 
-[build.environment]
-  NODE_VERSION = "20"
-
 [functions]
-  external_node_modules = ["express", "mongodb"]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
 
 [[redirects]]
-  force = true
   from = "/api/*"
-  status = 200
   to = "/.netlify/functions/api/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"
-  status = 200
   to = "/index.html"
+  status = 200

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function NumbersSorter() {
-  const { token, isAdmin } = useAuth();
+  const { token, isAdmin, user } = useAuth();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
   const [inputNumbers, setInputNumbers] = useState<string>("");
@@ -26,13 +26,15 @@ export default function NumbersSorter() {
 
   // Listen for real-time updates
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user?.teamId) return;
 
-    const invalidateQueued = () => {
+    const invalidateQueued = (data: { teamId?: string }) => {
+      if (data.teamId && data.teamId !== user.teamId) return;
       queryClient.invalidateQueries({ queryKey: ["queued"] });
     };
 
-    const invalidateSettings = () => {
+    const invalidateSettings = (data: { teamId?: string }) => {
+      if (data.teamId && data.teamId !== user.teamId) return;
       queryClient.invalidateQueries({ queryKey: ["claim-settings"] });
     };
 
@@ -43,7 +45,7 @@ export default function NumbersSorter() {
       socket.off("lines-queued-updated", invalidateQueued);
       socket.off("claim-settings-updated", invalidateSettings);
     };
-  }, [socket, queryClient]);
+  }, [socket, queryClient, user?.teamId]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -95,8 +97,18 @@ export default function NumbersSorter() {
         body: JSON.stringify({ lines }),
         token,
       }),
-    onSuccess: () => {
-      toast.success("Added to queue successfully!");
+    onSuccess: (data) => {
+      const added = data.count || 0;
+      const skipped = data.skipped || 0;
+
+      if (added > 0) {
+        toast.success(`Added ${added} to queue! ${skipped > 0 ? `Skipped ${skipped} duplicates.` : ""}`);
+      } else if (skipped > 0) {
+        toast.info(`All ${skipped} lines skipped (already in queue/history).`);
+      } else {
+        toast.info("No lines were added.");
+      }
+
       setDeduplicated([]);
       setInputNumbers("");
       queryClient.invalidateQueries({ queryKey: ["queued"] });

@@ -30,30 +30,39 @@ export default function Dashboard() {
 
   // Listen for real-time updates
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user?.teamId) return;
 
-    const invalidateQueued = () => {
+    const invalidateQueued = (data: { teamId?: string }) => {
+      if (data.teamId && data.teamId !== user.teamId) return;
       queryClient.invalidateQueries({ queryKey: ["queued"] });
     };
 
-    const invalidateClaims = () => {
+    const invalidateClaims = (data: { teamId?: string; userId?: string }) => {
+      if (data.teamId && data.teamId !== user.teamId) return;
+      // If it's a specific user update, and we're not that user (and not admin), ignore
+      if (data.userId && data.userId !== user._id && !isAdmin) return;
       queryClient.invalidateQueries({ queryKey: ["claimed-numbers"] });
     };
 
-    const invalidateMembers = () => {
+    const invalidateMembers = (data: { teamId?: string }) => {
+      // data might be the newUser object or just have teamId
+      const teamId = (data as any).teamId;
+      if (teamId && teamId !== user.teamId) return;
       queryClient.invalidateQueries({ queryKey: ["members"] });
     };
 
     socket.on("lines-queued-updated", invalidateQueued);
     socket.on("claimed-today-updated", invalidateClaims);
     socket.on("team-members-updated", invalidateMembers);
+    socket.on("member-added", invalidateMembers);
 
     return () => {
       socket.off("lines-queued-updated", invalidateQueued);
       socket.off("claimed-today-updated", invalidateClaims);
       socket.off("team-members-updated", invalidateMembers);
+      socket.off("member-added", invalidateMembers);
     };
-  }, [socket, queryClient]);
+  }, [socket, queryClient, user?.teamId, user?._id, isAdmin]);
 
   // Fetch team members
   const { data: teamMembers = [], isLoading: loadingMembers } = useQuery<User[]>({

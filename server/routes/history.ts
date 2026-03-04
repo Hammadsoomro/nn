@@ -18,6 +18,7 @@ export const addToHistory: RequestHandler = async (req, res) => {
     const result = await collections.history.insertOne({
       content: validated.content,
       claimedBy: validated.claimedBy,
+      claimedByUserId: (req as any).userId,
       claimedAt: new Date().toISOString(),
       teamId,
     });
@@ -26,6 +27,7 @@ export const addToHistory: RequestHandler = async (req, res) => {
       _id: result.insertedId.toString(),
       content: validated.content,
       claimedBy: validated.claimedBy,
+      claimedByUserId: (req as any).userId,
       claimedAt: new Date().toISOString(),
       teamId,
     };

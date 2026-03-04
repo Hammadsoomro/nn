@@ -12,21 +12,21 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:client && npm run build:server",
+    "build": "npm run build:client && npm run build:server && npm run build:netlify",
     "build:client": "vite build",
     "build:server": "vite build --config vite.config.server.ts",
+    "build:netlify": "vite build --config vite.config.netlify.ts",
     "start": "node dist/server/node-build.mjs",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
     "typecheck": "tsc"
   },
   "dependencies": {
+    "ably": "^2.19.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "mongodb": "^7.0.0",
     "serverless-http": "^3.2.0",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {

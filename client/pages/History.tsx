@@ -63,9 +63,15 @@ export default function History() {
 
   // Listen for real-time updates when new lines are claimed
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user?.teamId) return;
 
-    const handleClaimedTodayUpdated = () => {
+    const handleClaimedTodayUpdated = (data: { teamId?: string; userId?: string }) => {
+      // Only refresh if it belongs to our team
+      if (data.teamId && data.teamId !== user.teamId) return;
+
+      // If we are a member, only refresh if it's our own claim
+      if (!isAdmin && data.userId && data.userId !== user._id) return;
+
       console.log("[History] Claimed today updated, refreshing history");
       // Refresh history without full loading state
       fetchHistory(false);
@@ -76,7 +82,7 @@ export default function History() {
     return () => {
       socket.off("claimed-today-updated", handleClaimedTodayUpdated);
     };
-  }, [socket, token]);
+  }, [socket, token, user?.teamId, user?._id, isAdmin]);
 
   // Filter entries based on search (searches ALL entries, not just current page)
   useEffect(() => {
