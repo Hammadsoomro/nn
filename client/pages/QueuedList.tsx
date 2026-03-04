@@ -11,7 +11,7 @@ import type { QueuedLine } from "@shared/api";
 const ITEMS_PER_PAGE = 100;
 
 export default function QueuedList() {
-  const { token, isAdmin } = useAuth();
+  const { token, isAdmin, user } = useAuth();
   const { socket } = useSocket();
   const [lines, setLines] = useState<QueuedLine[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,11 +61,14 @@ export default function QueuedList() {
 
   // Listen for real-time updates via global socket
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user?.teamId) return;
 
     let timeoutId: NodeJS.Timeout;
 
-    const handleLinesQueued = (data: { count: number }) => {
+    const handleLinesQueued = (data: { count: number; teamId?: string }) => {
+      // Only process updates for the current user's team
+      if (data.teamId && data.teamId !== user.teamId) return;
+
       console.log("[QueuedList] Lines queued updated:", data.count);
       // Debounce re-fetch to prevent excessive updates
       clearTimeout(timeoutId);
@@ -80,7 +83,7 @@ export default function QueuedList() {
       socket.off("lines-queued-updated", handleLinesQueued);
       clearTimeout(timeoutId);
     };
-  }, [socket, token]);
+  }, [socket, token, user?.teamId]);
 
   // Adjust current page if it's now out of bounds after lines change
   // (We no longer automatically reset to page 1 to prevent annoying jumps)
