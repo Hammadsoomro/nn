@@ -19,12 +19,21 @@ export async function apiFetch(
     headers,
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      error: "API request failed",
-    }));
-    throw new Error(error.error || `API Error: ${response.status}`);
+  let data;
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    data = await response.json();
+  } else {
+    const text = await response.text();
+    if (text.trim().startsWith("<!DOCTYPE")) {
+      throw new Error("API configuration error: Request redirected to SPA frontend.");
+    }
+    throw new Error(`Server returned unexpected format: ${contentType || "unknown"}`);
   }
 
-  return response.json();
+  if (!response.ok) {
+    throw new Error(data.error || `API Error: ${response.status}`);
+  }
+
+  return data;
 }

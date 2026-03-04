@@ -54,7 +54,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        if (text.trim().startsWith("<!DOCTYPE")) {
+          throw new Error("API configuration error: Redirected to SPA. Please check Netlify settings.");
+        }
+        throw new Error(`Server returned unexpected format: ${contentType || "unknown"}`);
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Login failed");
@@ -83,7 +93,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           body: JSON.stringify({ email, password, name }),
         });
 
-        const data = await response.json();
+        let data;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          if (text.trim().startsWith("<!DOCTYPE")) {
+            throw new Error("API configuration error: Redirected to SPA. Please check Netlify settings.");
+          }
+          throw new Error(`Server returned unexpected format: ${contentType || "unknown"}`);
+        }
 
         if (!response.ok) {
           throw new Error(data.error || "Signup failed");
