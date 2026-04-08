@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "ably": "^2.19.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "mongodb": "^7.0.0",
@@ -72,7 +73,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "cors": "^2.8.5",
     "globals": "^16.3.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.539.0",
