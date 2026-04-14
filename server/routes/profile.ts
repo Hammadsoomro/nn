@@ -207,3 +207,68 @@ export const changePassword: RequestHandler = async (
     res.status(500).json({ error: "Failed to change password" });
   }
 };
+
+// Account reset - Clear all user data
+export const resetAccount: RequestHandler = async (
+  req: AuthRequest,
+  res,
+) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      res.status(400).json({ error: "Password is required to reset account" });
+      return;
+    }
+
+    const collections = getCollections();
+    const user = await collections.users.findOne({
+      _id: new ObjectId(req.userId),
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Verify password for security
+    const hashedPassword = hashPassword(password);
+    if (hashedPassword !== user.password) {
+      res.status(401).json({ error: "Password is incorrect" });
+      return;
+    }
+
+    // Clear user's data
+    const teamId = user.teamId;
+
+    // Delete all claimed numbers for this user
+    await collections.claimedNumbers.deleteMany({
+      teamId,
+      claimedBy: req.userId,
+    });
+
+    // Delete all history entries for this user
+    await collections.history.deleteMany({
+      teamId,
+      claimedByUserId: req.userId,
+    });
+
+    // Delete all queued lines created by this user
+    await collections.queuedLines.deleteMany({
+      teamId,
+      addedBy: req.userId,
+    });
+
+    res.json({
+      message: "Account data reset successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error resetting account:", error);
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: "Invalid request" });
+      return;
+    }
+    res.status(500).json({ error: "Failed to reset account" });
+  }
+};
