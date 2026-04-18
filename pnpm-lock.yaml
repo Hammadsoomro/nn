@@ -15,8 +15,8 @@ importers:
         specifier: ^17.2.1
         version: 17.2.1
       express:
-        specifier: ^5.1.0
-        version: 5.1.0
+        specifier: ^4.18.2
+        version: 4.18.2
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
