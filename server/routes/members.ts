@@ -121,41 +121,21 @@ export const getTeamMembers: RequestHandler = async (req: AuthRequest, res) => {
       .find({ teamId: req.teamId })
       .toArray();
 
-    const formattedMembers = await Promise.all(
-      members.map(async (member) => {
-        const userId = member._id.toString();
-
-        // Get total claims
-        const totalClaims = await collections.history.countDocuments({
-          teamId: req.teamId,
-          claimedByUserId: userId,
-        });
-
-        // Get claims today
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
-        const claimsToday = await collections.history.countDocuments({
-          teamId: req.teamId,
-          claimedByUserId: userId,
-          claimedAt: {
-            $gte: startOfToday.toISOString(),
-          },
-        });
-
-        return {
-          _id: userId,
-          email: member.email,
-          name: member.name,
-          role: member.role,
-          profilePicture: member.profilePicture,
-          createdBy: member.createdBy,
-          createdAt: member.createdAt,
-          updatedAt: member.updatedAt,
-          totalClaims,
-          claimsToday,
-        };
-      }),
-    );
+    // Format members with basic info only (faster response)
+    const formattedMembers = members.map((member) => {
+      return {
+        _id: member._id.toString(),
+        email: member.email,
+        name: member.name,
+        role: member.role,
+        profilePicture: member.profilePicture,
+        createdBy: member.createdBy,
+        createdAt: member.createdAt,
+        updatedAt: member.updatedAt,
+        totalClaims: 0,
+        claimsToday: 0,
+      };
+    });
 
     res.json(formattedMembers);
   } catch (error) {
