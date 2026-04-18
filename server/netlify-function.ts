@@ -27,6 +27,11 @@ export const handler = async (event: any, context: any) => {
   }
 
   try {
+    // Decode body if it's base64 encoded (Netlify Functions standard)
+    if (event.isBase64Encoded && event.body) {
+      event.body = Buffer.from(event.body, "base64").toString("utf-8");
+    }
+
     return await cachedHandler(event, context);
   } catch (error) {
     console.error("[Server] Request processing error:", error);
