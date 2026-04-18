@@ -26,14 +26,14 @@ import { getCollections } from "./db";
 
 export async function createServer() {
   console.log("[Server] Starting server initialization...");
-  // Initialize MongoDB connection
-  try {
-    await connectDB();
-    console.log("[Server] Database initialized successfully");
-  } catch (error) {
-    console.error("[Server] Failed to initialize database:", error);
-    // Continue even if database fails, but endpoints will return 500
-  }
+  // Initialize MongoDB connection asynchronously (don't block server startup)
+  connectDB()
+    .then(() => {
+      console.log("[Server] Database initialized successfully");
+    })
+    .catch((error) => {
+      console.error("[Server] Failed to initialize database:", error);
+    });
 
   const app = express();
 

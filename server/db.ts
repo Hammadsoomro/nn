@@ -28,7 +28,10 @@ export async function connectDB(): Promise<Db> {
   }
 
   try {
-    client = new MongoClient(mongoUri);
+    client = new MongoClient(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
     await client.connect();
     db = client.db("taskflow");
 
