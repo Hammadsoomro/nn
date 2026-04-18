@@ -27,7 +27,7 @@
     "express": "^5.1.0",
     "mongodb": "^7.0.0",
     "serverless-http": "^3.2.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
     "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
