@@ -26,6 +26,9 @@ importers:
       zod:
         specifier: ^3.25.76
         version: 3.25.76
+      jsonwebtoken:
+        specifier: ^9.0.3
+        version: 9.0.3
     devDependencies:
       '@hookform/resolvers':
         specifier: ^5.2.1

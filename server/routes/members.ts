@@ -121,45 +121,97 @@ export const getTeamMembers: RequestHandler = async (req: AuthRequest, res) => {
       .find({ teamId: req.teamId })
       .toArray();
 
-    const formattedMembers = await Promise.all(
-      members.map(async (member) => {
-        const userId = member._id.toString();
-
-        // Get total claims
-        const totalClaims = await collections.history.countDocuments({
-          teamId: req.teamId,
-          claimedByUserId: userId,
-        });
-
-        // Get claims today
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
-        const claimsToday = await collections.history.countDocuments({
-          teamId: req.teamId,
-          claimedByUserId: userId,
-          claimedAt: {
-            $gte: startOfToday.toISOString(),
-          },
-        });
-
-        return {
-          _id: userId,
-          email: member.email,
-          name: member.name,
-          role: member.role,
-          profilePicture: member.profilePicture,
-          createdBy: member.createdBy,
-          createdAt: member.createdAt,
-          updatedAt: member.updatedAt,
-          totalClaims,
-          claimsToday,
-        };
-      }),
-    );
+    // Format members with basic info only (faster response)
+    const formattedMembers = members.map((member) => {
+      return {
+        _id: member._id.toString(),
+        email: member.email,
+        name: member.name,
+        role: member.role,
+        profilePicture: member.profilePicture,
+        createdBy: member.createdBy,
+        createdAt: member.createdAt,
+        updatedAt: member.updatedAt,
+        totalClaims: 0,
+        claimsToday: 0,
+      };
+    });
 
     res.json(formattedMembers);
   } catch (error) {
     console.error("Error getting team members:", error);
     res.status(500).json({ error: "Failed to get team members" });
+  }
+};
+
+// Delete a team member (admin only)
+export const deleteTeamMember: RequestHandler = async (
+  req: AuthRequest,
+  res,
+) => {
+  try {
+    if (!req.teamId) {
+      res.status(401).json({ error: "Team not found" });
+      return;
+    }
+
+    // Check if user is admin
+    if (req.role !== "admin") {
+      res.status(403).json({ error: "Only admins can delete team members" });
+      return;
+    }
+
+    const { memberId } = req.params;
+
+    if (!memberId) {
+      res.status(400).json({ error: "Member ID is required" });
+      return;
+    }
+
+    const collections = getCollections();
+
+    // Check if member exists and belongs to same team
+    const member = await collections.users.findOne({
+      _id: new ObjectId(memberId),
+      teamId: req.teamId,
+    });
+
+    if (!member) {
+      res.status(404).json({ error: "Team member not found" });
+      return;
+    }
+
+    // Prevent admin from deleting themselves
+    if (member._id.toString() === req.userId) {
+      res.status(400).json({ error: "Cannot delete your own account" });
+      return;
+    }
+
+    // Delete the member
+    await collections.users.deleteOne({
+      _id: new ObjectId(memberId),
+      teamId: req.teamId,
+    });
+
+    // Remove from chat groups
+    try {
+      await collections.chatGroups.updateMany(
+        { teamId: req.teamId },
+        { $pull: { members: { $eq: memberId } } } as any,
+      );
+    } catch (error) {
+      console.error("Error updating chat groups:", error);
+    }
+
+    // Emit real-time update
+    const io = getIO();
+    if (io) {
+      io.emit("team-members-updated", { teamId: req.teamId });
+    }
+
+    res.json({ success: true, message: "Team member deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting team member:", error);
+    res.status(500).json({ error: "Failed to delete team member" });
   }
 };

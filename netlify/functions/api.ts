@@ -14,13 +14,27 @@ export const handler = async (event: any, context: any) => {
         binary: ["image/*", "font/*", "application/octet-stream"],
       });
     } catch (error) {
-      console.error("Failed to initialize serverless handler:", error);
+      console.error("[Server] Critical initialization error:", error);
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: "Internal Server Error", message: String(error) }),
+        body: JSON.stringify({
+          error: "Critical server initialization error",
+          message: String(error)
+        })
       };
     }
   }
 
-  return cachedHandler(event, context);
+  try {
+    return await cachedHandler(event, context);
+  } catch (error) {
+    console.error("[Server] Request processing error:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: "Internal server error during request processing",
+        message: String(error)
+      })
+    };
+  }
 };

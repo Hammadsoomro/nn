@@ -23,6 +23,7 @@ import {
   Settings as SettingsIcon,
   Eye,
   EyeOff,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -317,6 +318,129 @@ function AccountInfoPanel({
   );
 }
 
+// Account Reset Panel Component
+function AccountResetPanel({
+  user,
+  token,
+}: {
+  user: any;
+  token: string | null;
+}) {
+  const { logout } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState("");
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!password) {
+      toast.error("Password is required");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to reset your account? This will delete all your claimed numbers, history, and queued items. This action cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setResetting(true);
+      const response = await fetch("/api/profile/reset-account", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        toast.success("Account reset successfully");
+        setPassword("");
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          logout();
+        }, 1000);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to reset account");
+      }
+    } catch (error) {
+      console.error("Error resetting account:", error);
+      toast.error("Failed to reset account");
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  return (
+    <Card className="border-destructive/30">
+      <CardHeader>
+        <CardTitle className="text-destructive">Reset Account</CardTitle>
+        <CardDescription>
+          Clear all your data including claimed numbers, history, and queued
+          items
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleResetAccount} className="space-y-4">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-sm text-destructive">
+            <p className="font-semibold mb-1">Warning: This action cannot be undone</p>
+            <p>
+              Resetting your account will permanently delete all your claimed
+              numbers, history, and queued items. Your account will remain but
+              all data will be cleared.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label
+              htmlFor="reset-password"
+              className="text-sm font-medium text-foreground"
+            >
+              Enter your password to confirm
+            </Label>
+            <div className="relative">
+              <Input
+                id="reset-password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={resetting}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={resetting}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={resetting || !password}
+            variant="destructive"
+            className="w-full"
+          >
+            {resetting ? "Resetting..." : "Reset Account"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 // Password Change Panel Component
 function PasswordChangePanel({
   user,
@@ -602,6 +726,34 @@ function TeamMembersPanel() {
     }
   };
 
+  const handleDeleteMember = async (memberId: string, memberName: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to remove ${memberName} from the team? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/members/${memberId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setMembers(members.filter((m) => m._id !== memberId));
+        toast.success("Team member removed successfully");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to remove team member");
+      }
+    } catch (error) {
+      console.error("Error deleting member:", error);
+      toast.error("Failed to remove team member");
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -788,13 +940,24 @@ function TeamMembersPanel() {
                       {member.email}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-foreground capitalize">
-                      {member.role}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDateOnly(member.createdAt)}
-                    </p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-foreground capitalize">
+                        {member.role}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateOnly(member.createdAt)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        handleDeleteMember(member._id, member.name)
+                      }
+                      className="p-2 hover:bg-destructive/10 rounded-lg text-destructive hover:text-destructive transition-colors"
+                      title="Remove member"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1023,6 +1186,9 @@ export default function SettingsPage() {
 
               {/* Password Change Card */}
               <PasswordChangePanel user={user} token={token} />
+
+              {/* Account Reset Card */}
+              <AccountResetPanel user={user} token={token} />
             </TabsContent>
 
             {/* Team Management Tab (Admin Only) */}

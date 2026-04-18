@@ -5,12 +5,13 @@ import { handleDemo } from "./routes/demo";
 import { handleLogin, handleSignup } from "./routes/auth";
 import { addToQueue, getQueuedLines, clearQueuedLine, clearAllQueuedLines, deduplicateLines } from "./routes/queued";
 import { addToHistory, getHistory, searchHistory } from "./routes/history";
-import { createTeamMember, getTeamMembers } from "./routes/members";
+import { createTeamMember, getTeamMembers, deleteTeamMember } from "./routes/members";
 import {
   uploadProfilePicture,
   getProfile,
   updateName,
   changePassword,
+  resetAccount,
 } from "./routes/profile";
 import {
   getClaimSettings,
@@ -107,12 +108,14 @@ export async function createServer() {
   // Member routes (protected)
   app.get("/api/members", authMiddleware, getTeamMembers);
   app.post("/api/members", authMiddleware, createTeamMember);
+  app.delete("/api/members/:memberId", authMiddleware, deleteTeamMember);
 
   // Profile routes (protected)
   app.get("/api/profile", authMiddleware, getProfile);
   app.post("/api/profile/upload-picture", authMiddleware, uploadProfilePicture);
   app.post("/api/profile/update-name", authMiddleware, updateName);
   app.post("/api/profile/change-password", authMiddleware, changePassword);
+  app.post("/api/profile/reset-account", authMiddleware, resetAccount);
 
   // Claim routes (protected)
   app.get("/api/claim/settings", authMiddleware, getClaimSettings);

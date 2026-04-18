@@ -222,7 +222,13 @@ export default function Dashboard() {
               {quickLinks.map((link, index) => {
                 const Icon = link.icon;
                 return (
-                  <Link key={index} to={link.path}>
+                  <Link
+                    key={index}
+                    to={link.path}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block h-full"
+                  >
                     <Card className="h-full border-border/50 hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer group">
                       <CardContent className="pt-4 pb-4">
                         <div className="space-y-2">
