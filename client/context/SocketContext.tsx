@@ -37,48 +37,58 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const ABLY_KEY = import.meta.env.VITE_ABLY_API_KEY_SUBSCRIBE;
-    
+
     if (!ABLY_KEY) {
-      console.warn("[Ably] VITE_ABLY_API_KEY_SUBSCRIBE not found");
+      console.warn("[Ably] VITE_ABLY_API_KEY_SUBSCRIBE not configured - real-time features disabled");
+      // Mark as connected anyway so UI doesn't wait indefinitely
+      setIsConnected(true);
       return;
     }
 
     console.log("[Ably] Initializing Realtime connection...");
-    
-    // Initialize Ably Realtime
-    const ably = new Ably.Realtime({
-      key: ABLY_KEY,
-      clientId: user._id,
-    });
 
-    ablyRef.current = ably;
+    try {
+      // Initialize Ably Realtime
+      const ably = new Ably.Realtime({
+        key: ABLY_KEY,
+        clientId: user._id,
+        autoConnect: true,
+      });
 
-    ably.connection.on("connected", () => {
-      console.log("[Ably] Connected to real-time service");
+      ablyRef.current = ably;
+
+      ably.connection.on("connected", () => {
+        console.log("[Ably] Connected to real-time service");
+        setIsConnected(true);
+      });
+
+      ably.connection.on("disconnected", () => {
+        console.log("[Ably] Disconnected from real-time service");
+        setIsConnected(false);
+      });
+
+      ably.connection.on("failed", (err) => {
+        console.error("[Ably] Connection failed:", err);
+        // Mark as connected anyway to prevent UI hang
+        setIsConnected(true);
+      });
+
+      // Subscribe to common channels
+      const globalChannel = ably.channels.get("all");
+      globalChannel.subscribe(dispatchMessage);
+
+      if (user.teamId) {
+        const teamChannel = ably.channels.get(user.teamId);
+        teamChannel.subscribe(dispatchMessage);
+
+        // Also subscribe to user-specific channel
+        const userChannel = ably.channels.get(`user:${user._id}`);
+        userChannel.subscribe(dispatchMessage);
+      }
+    } catch (error) {
+      console.error("[Ably] Failed to initialize:", error);
+      // Mark as connected to allow UI to continue
       setIsConnected(true);
-    });
-
-    ably.connection.on("disconnected", () => {
-      console.log("[Ably] Disconnected from real-time service");
-      setIsConnected(false);
-    });
-
-    ably.connection.on("failed", (err) => {
-      console.error("[Ably] Connection failed:", err);
-      setIsConnected(false);
-    });
-
-    // Subscribe to common channels
-    const globalChannel = ably.channels.get("all");
-    globalChannel.subscribe(dispatchMessage);
-
-    if (user.teamId) {
-      const teamChannel = ably.channels.get(user.teamId);
-      teamChannel.subscribe(dispatchMessage);
-      
-      // Also subscribe to user-specific channel
-      const userChannel = ably.channels.get(`user:${user._id}`);
-      userChannel.subscribe(dispatchMessage);
     }
 
     return () => {
