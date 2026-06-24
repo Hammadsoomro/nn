@@ -25,3 +25,7 @@ dist-ssr
 
 .config/
 !.env
+
+# Netlify function build outputs
+netlify/functions/*.mjs
+netlify/functions/*.mjs.map
